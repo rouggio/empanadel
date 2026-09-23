@@ -29,6 +29,11 @@ function app() {
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
     bookingsLoading: false as boolean,
     bookingsError: "" as string,
+    adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string }>,
+    adminLoading: false as boolean,
+    adminError: "" as string,
+    adminFilter: "pending_approval" as string,
+    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
 
     t(key: string): string {
       return translate(this.lang, key);
@@ -76,10 +81,10 @@ function app() {
       window.addEventListener("hashchange", () => {
         this.view = location.hash.replace("#", "") || "home";
         if (this.view === "me" && this.user) this.loadBookings();
+        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
-      // reload bookings when user becomes authed
-      this.$watch?.("view", (v: string) => { if (v === "me" && this.user) this.loadBookings(); });
+      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
     },
 
     filteredCourts() {
@@ -242,6 +247,61 @@ function app() {
       if (!res.ok) { alert("Cancel failed: " + await res.text()); return; }
       await this.loadBookings();
       await this.loadAvailability();
+    },
+
+    async loadAdminBookings() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminLoading = true; this.adminError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const q = this.adminFilter ? `?status=${this.adminFilter}` : "";
+        const res = await fetch(`/api/bookings${q}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const rows = await res.json();
+        this.adminBookings = (rows as any[]).map((r) => ({
+          id: r.id,
+          courtId: r.courtId || r.court_id,
+          date: r.date,
+          startTime: (r.startTime || r.start_time || "").slice(0,5),
+          endTime: (r.endTime || r.end_time || "").slice(0,5),
+          status: r.status,
+          userId: r.userId || r.user_id,
+        }));
+      } catch (e: any) { this.adminError = e.message || String(e); }
+      finally { this.adminLoading = false; }
+    },
+
+    async approveBooking(id: string) {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/bookings/${id}/approve`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Approve failed: " + await res.text()); return; }
+      await this.loadAdminBookings(); await this.loadBookings(); await this.loadAvailability();
+    },
+
+    async rejectBooking(id: string) {
+      if (!confirm("Reject this booking?")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/bookings/${id}/reject`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Reject failed: " + await res.text()); return; }
+      await this.loadAdminBookings(); await this.loadBookings(); await this.loadAvailability();
+    },
+
+    async loadAdminSettings() {
+      if (!this.user || this.user.role !== "admin") return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) this.adminSettings = await res.json();
+      } catch {}
+    },
+
+    async toggleAutoApprove() {
+      if (!this.adminSettings) return;
+      const next = !this.adminSettings.auto_approve_bookings;
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ auto_approve_bookings: next }) });
+      if (!res.ok) { alert("Settings failed: " + await res.text()); return; }
+      this.adminSettings.auto_approve_bookings = next;
     },
 
     logout() {

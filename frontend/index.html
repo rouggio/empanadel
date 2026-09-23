@@ -112,8 +112,35 @@
         </section>
 
         <section x-show="view==='me'" class="space-y-4">
-          <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
-          <div class="rounded-xl border bg-white p-4 text-sm text-zinc-600"><span x-text="t('myBookings.hint')"></span> <code>/api/bookings?mine=true</code></div>
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
+            <button @click="loadBookings()" class="rounded-lg border px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
+          </div>
+          <div class="flex gap-2">
+            <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-black text-white' : 'border bg-white'" x-text="'Upcoming'"></button>
+            <button @click="bookingsTab='past'" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-black text-white' : 'border bg-white'" x-text="'Past'"></button>
+            <button @click="bookingsTab='all'" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='all' ? 'bg-black text-white' : 'border bg-white'" x-text="t('filter.all')"></button>
+          </div>
+          <p x-show="bookingsLoading" class="text-sm text-zinc-500">Loading…</p>
+          <p x-show="bookingsError" class="text-sm text-red-600" x-text="bookingsError"></p>
+          <p x-show="!bookingsLoading && filteredBookings().length===0" class="rounded-xl border bg-white p-4 text-sm text-zinc-500 text-center" x-text="bookings.length===0 ? t('myBookings.hint') + ' — no bookings yet' : 'No bookings in this tab'"></p>
+          <div class="space-y-3">
+            <template x-for="b in filteredBookings()" :key="b.id">
+              <div class="rounded-xl border bg-white p-4">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="font-semibold" x-text="courtLabel(b)"></div>
+                    <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+                    <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
+                  </div>
+                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
+                </div>
+                <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval' || b.status==='approved'">
+                  <button @click="cancelBooking(b.id)" class="rounded-full border px-3 py-1 text-xs hover:bg-zinc-50">Cancel</button>
+                </div>
+              </div>
+            </template>
+          </div>
           <div class="rounded-xl border bg-white p-4">
             <label class="text-sm font-medium" x-text="t('lang.label')"></label>
             <select @change="setLang($event.target.value)" :value="lang" class="ml-2 rounded border px-2 py-1 text-sm">
@@ -123,8 +150,48 @@
         </section>
 
         <section x-show="view==='admin'" class="space-y-4">
-          <h2 class="text-xl font-bold" x-text="t('admin.title')"></h2>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-xl font-bold" x-text="t('admin.title')"></h2>
+            <button @click="loadAdminBookings(); loadAdminSettings()" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
+          </div>
+          <!-- Auto-approve toggle -->
+          <div class="flex items-center justify-between rounded-xl border bg-white p-4" x-show="adminSettings">
+            <div>
+              <div class="font-medium text-sm">Auto-approve bookings</div>
+              <div class="text-xs text-zinc-500" x-text="adminSettings ? (adminSettings.auto_approve_bookings ? 'New bookings auto-approved' : 'Requires manual approval') : ''"></div>
+            </div>
+            <button @click="toggleAutoApprove()" class="rounded-full px-4 py-2 text-xs font-medium" :class="adminSettings?.auto_approve_bookings ? 'bg-emerald-600 text-white' : 'bg-zinc-200'" x-text="adminSettings?.auto_approve_bookings ? 'ON' : 'OFF'"></button>
+          </div>
+          <div class="flex gap-2">
+            <select x-model="adminFilter" @change="loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
+              <option value="pending_approval" x-text="t('status.pending_approval')"></option>
+              <option value="approved" x-text="t('status.approved')"></option>
+              <option value="pending_registration" x-text="t('status.pending_registration')"></option>
+              <option value="">All</option>
+            </select>
+            <span x-show="adminLoading" class="text-xs text-zinc-500 py-2">Loading…</span>
+          </div>
+          <p x-show="adminError" class="text-sm text-red-600" x-text="adminError"></p>
+          <p x-show="!adminLoading && adminBookings.length===0" class="rounded-xl border bg-white p-6 text-center text-sm text-zinc-500">No bookings in this queue</p>
+          <div class="space-y-3">
+            <template x-for="b in adminBookings" :key="b.id">
+              <div class="rounded-xl border bg-white p-4">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="font-semibold" x-text="courtLabel(b)"></div>
+                    <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+                    <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)} · user ${String(b.userId||'').slice(0,8)}`"></div>
+                  </div>
+                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
+                </div>
+                <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval'">
+                  <button @click="approveBooking(b.id)" class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700">Approve</button>
+                  <button @click="rejectBooking(b.id)" class="rounded-full border px-4 py-2 text-xs hover:bg-zinc-50">Reject</button>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2 pt-4 border-t">
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.courts')"></div><div class="text-sm text-zinc-600">CRUD at /api/courts</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.timetable')"></div><div class="text-sm text-zinc-600">PUT /api/timetable · 30/60/90/120</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc + recurring</div></div>

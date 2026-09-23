@@ -22,11 +22,11 @@
               <div class="flex items-center gap-2">
                 <label class="hidden text-xs text-zinc-500 md:block" x-text="t('lang.label')"></label>
                 <select @change="setLang($event.target.value)" :value="lang" class="rounded-full border px-2 py-1 text-xs">
-                  <option value="it" x-text="t('lang.it')"></option>
-                  <option value="en" x-text="t('lang.en')"></option>
-                  <option value="fr" x-text="t('lang.fr')"></option>
-                  <option value="de" x-text="t('lang.de')"></option>
-                  <option value="es" x-text="t('lang.es')"></option>
+                  <option value="it" x-text="'🇮🇹 ' + t('lang.it')"></option>
+                  <option value="en" x-text="'🇬🇧 ' + t('lang.en')"></option>
+                  <option value="fr" x-text="'🇫🇷 ' + t('lang.fr')"></option>
+                  <option value="de" x-text="'🇩🇪 ' + t('lang.de')"></option>
+                  <option value="es" x-text="'🇪🇸 ' + t('lang.es')"></option>
                 </select>
               </div>
             </template>
@@ -165,7 +165,7 @@
           <div class="flex items-center gap-2">
             <label class="text-xs text-zinc-500" x-text="t('lang.label')"></label>
             <select x-model="lang" @change="setLang(lang)" class="rounded-lg border px-3 py-2 text-xs">
-              <option value="it" x-text="t('lang.it')"></option><option value="en" x-text="t('lang.en')"></option><option value="fr" x-text="t('lang.fr')"></option><option value="de" x-text="t('lang.de')"></option><option value="es" x-text="t('lang.es')"></option>
+              <option value="it" x-text="'🇮🇹 ' + t('lang.it')"></option><option value="en" x-text="'🇬🇧 ' + t('lang.en')"></option><option value="fr" x-text="'🇫🇷 ' + t('lang.fr')"></option><option value="de" x-text="'🇩🇪 ' + t('lang.de')"></option><option value="es" x-text="'🇪🇸 ' + t('lang.es')"></option>
             </select>
           </div>
           <button @click="register()" class="w-full rounded-lg bg-emerald-600 py-2 text-white" x-text="t('auth.confirm')"></button>
@@ -246,7 +246,7 @@
             </select>
             <input x-model="profileForm.birthdate" type="date" class="w-full rounded-lg border px-3 py-2 text-sm" />
             <select x-model="profileForm.preferred_language" class="w-full rounded-lg border px-3 py-2 text-sm">
-              <option value="it">Italiano</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option>
+              <option value="it">🇮🇹 Italiano</option><option value="en">🇬🇧 English</option><option value="fr">🇫🇷 Français</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option>
             </select>
             <button @click="saveProfile()" class="w-full rounded-lg bg-black py-2 text-sm text-white">Save</button>
           </div>

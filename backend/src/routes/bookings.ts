@@ -61,11 +61,12 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
 
     const settings = await db.select().from(appSettings).where(eq(appSettings.id, 1));
     const autoApprove = settings[0]?.autoApproveBookings ?? false;
-    const status = autoApprove ? "approved" : "pending_approval";
+    // Admin bookings are auto-approved (no need to approve own booking)
+    const status = user.role === "admin" || autoApprove ? "approved" : "pending_approval";
 
     const [row] = await db
       .insert(bookings)
-      .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any, notes: notes ?? null, rentRacquets: rent_racquets ?? 0, players: playersVal })
+      .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any, notes: notes ?? null, rentRacquets: rent_racquets ?? 0, players: playersVal, reviewedBy: user.role === "admin" ? user.id : null })
       .returning();
     return reply.status(201).send(row);
   });

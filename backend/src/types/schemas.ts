@@ -39,6 +39,9 @@ export const bookingIntentSchema = z.object({
   court_id: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  notes: z.string().max(1000).optional().nullable(),
+  rent_racquets: z.number().int().min(0).max(4).optional().default(0),
+  players: z.union([z.literal(2), z.literal(4)]).optional(),
 });
 
 export const blockSchema = z.object({

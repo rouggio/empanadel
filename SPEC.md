@@ -1,7 +1,7 @@
 # Empanadel — Tennis & Padel Court Booking Web App — Specification
 
-> Version: 0.1.5 (Draft) — 2026-09-23
-> Status: Implementation — deferred booking: no anonymous hold, booking created only after register
+> Version: 0.1.6 (Draft) — 2026-09-23
+> Status: Implementation — booking confirm screen + optional notes
 > Stack: Frontend HTML + lightweight JS framework (Aurora-like) · Backend Node.js + TypeScript (Fastify + Drizzle) · PostgreSQL · Mobile-first · i18n (5 langs) · Deploy: Render.com (single Web Service)
 
 ---
@@ -104,6 +104,9 @@ Auth: **JWT** (short-lived access 15m + refresh 7d, stored in httpOnly cookie or
 - `date` DATE
 - `start_time`, `end_time` TIME (or `start_at`, `end_at` TIMESTAMPTZ)
 - `status` ENUM: `pending_approval`, `approved`, `rejected`, `cancelled` (+ legacy `pending_registration`, `expired` kept but not created for new bookings)
+- `notes` TEXT nullable — optional user notes for admin (max 1000 chars, shown in confirmation screen + admin queue + my bookings)
+- `rent_racquets` INT NOT NULL default 0 CHECK (0-4) — number of racquets to rent, selected in confirm screen (0-4)
+- `players` INT NOT NULL CHECK (2 or 4) — number of players; UI shows radio **Single / Double** (single=2, double=4); default tennis Single (2), padel Double (4)
 - `guest_token` VARCHAR nullable (legacy, deprecated — no longer used)
 - `expires_at` TIMESTAMPTZ nullable (legacy, deprecated)
 - `reviewed_by` UUID FK nullable (admin)
@@ -158,17 +161,17 @@ Ensure `User` and `Court.type` already support this without migration.
 Legacy: pending_registration / expired kept for backwards compat but not created for new visitor bookings
 ```
 
-### 4.2 Flow — Visitor (deferred registration) — updated 2026-09-23: no anonymous DB hold
+### 4.2 Flow — Visitor (deferred registration) — updated 2026-09-23: no anonymous DB hold + confirm screen
 
 1. Visitor browses `/courts` → picks court type, date, available slot (computed from timetable minus bookings minus blocks).
-2. Clicks "Book" → **no DB write**. Frontend stores intent locally: `{court_id, date, start_time}` in `localStorage` (`pending_booking_intent`) and shows countdown banner (e.g., "Complete registration to confirm — slot not held").
-3. Prompted to register: `username`, `email`, `password`, `first_name`, `last_name`, `preferred_language`. On submit, user created (`POST /api/auth/register`), JWT returned, then frontend immediately creates booking: `POST /api/bookings {court_id, date, start_time}` with JWT → status `pending_approval` (or `approved` if `auto_approve_bookings=true`).
-4. If visitor abandons registration, no booking row ever existed — nothing to expire. Slot remains available to others until an authenticated booking succeeds.
-5. Admin sees `pending_approval` queue, approves/rejects. On approval, booking → `approved` and user notified (email/in-app). On reject, slot released.
+2. Clicks "Book" → **no DB write**. Frontend stores intent locally: `{court_id, date, start_time}` in `localStorage` (`pending_booking_intent`) and navigates to **confirm screen** (or register if unauth). Confirm shows court, date, time + optional **notes textarea** for admin.
+3. If unauthenticated: prompted to register: `username`, `email`, `password`, `first_name`, `last_name`, `preferred_language`. On submit, user created (`POST /api/auth/register`), JWT returned, then frontend creates booking: `POST /api/bookings {court_id, date, start_time, notes?}` with JWT → status `pending_approval` (or `approved` if `auto_approve_bookings=true`).
+4. If authenticated: confirm screen → **Confirm** → `POST /api/bookings {court_id, date, start_time, notes?}` directly.
+5. Admin sees `pending_approval` queue with notes, approves/rejects. On approval, booking → `approved` and user notified.
 
 ### 4.3 Flow — Associate (authenticated)
 
-1. Picks slot → creates `Booking` with `status=pending_approval` directly.
+1. Picks slot → **confirm screen** with optional notes → confirms → creates `Booking` with `status=pending_approval` (notes persisted).
 2. If `app_settings.auto_approve_bookings = false` (default), admin approves/rejects. If `true`, system auto-transitions `pending_approval` → `approved` immediately (still creates audit entry, still checks blocks/overlaps).
 
 ### 4.4 Rules
@@ -248,7 +251,7 @@ GET    /api/availability           ?court_id=&date=YYYY-MM-DD&type=
        → returns slots: { start, end, status: available|booked|blocked|closed }
 
 Bookings
-POST   /api/bookings               {court_id, date, start_time} (auth only — creates pending_approval/approved)
+POST   /api/bookings               {court_id, date, start_time, notes?, rent_racquets?, players?} (auth only — notes 0-1000, rent_racquets 0-4 default 0, players 2|4 (UI Single/Double) default tennis Single=2/padel Double=4; all shown to admin)
 POST   /api/bookings/intent        {court_id, date, start_time} (deprecated, kept for compat — no longer used; returns 410 or no-op)
 GET    /api/bookings               ?mine=true | (admin: all, filters)
 GET    /api/bookings/:id
@@ -339,6 +342,9 @@ CREATE TABLE bookings (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   status booking_status NOT NULL,
+  notes TEXT,
+  rent_racquets INT NOT NULL DEFAULT 0 CHECK (rent_racquets BETWEEN 0 AND 4),
+  players INT NOT NULL DEFAULT 2 CHECK (players IN (2,4)),
   guest_token TEXT,
   expires_at TIMESTAMPTZ,
   reviewed_by UUID REFERENCES users(id),
@@ -618,4 +624,4 @@ For split frontend (alternative), add a second `type: web` service with `rootDir
 
 ---
 
-*Next step: deferred booking implemented — visitor intent stored locally, booking created only after register. Continue Phase 1 wiring and deploy to Render.com.*
+*Next step: booking confirm screen with optional notes + rent racquets (0-4) implemented — stored in bookings.notes / rent_racquets.*

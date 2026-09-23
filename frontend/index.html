@@ -90,6 +90,40 @@
           </div>
         </section>
 
+        <section x-show="view==='confirm'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+          <h2 class="text-lg font-bold">Confirm booking</h2>
+          <div class="rounded-lg bg-zinc-50 p-4 border text-sm">
+            <div class="font-semibold" x-text="pendingIntent?.courtLabel"></div>
+            <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
+            <div class="text-xs text-zinc-500" x-text="pendingIntent?.courtType ? (pendingIntent.courtType === 'padel' ? 'Padel' : 'Tennis') : ''"></div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Notes for admin (optional)</label>
+            <textarea x-model="confirmNotes" rows="3" maxlength="1000" placeholder="Any notes for the admin..." class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+            <div class="text-xs text-zinc-400 text-right" x-text="`${confirmNotes.length}/1000`"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-sm font-medium">Rent racquets</label>
+              <select x-model.number="confirmRent" class="w-full rounded-lg border px-3 py-2 text-sm">
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              </select>
+              <div class="text-xs text-zinc-500">0–4</div>
+            </div>
+            <div class="space-y-1">
+              <label class="text-sm font-medium">Players</label>
+              <div class="flex gap-4 pt-2">
+                <label class="flex items-center gap-2 text-sm"><input type="radio" value="single" x-model="confirmPlayers" /> Single (2)</label>
+                <label class="flex items-center gap-2 text-sm"><input type="radio" value="double" x-model="confirmPlayers" /> Double (4)</label>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button @click="cancelConfirm()" class="flex-1 rounded-lg border py-2 text-sm">Cancel</button>
+            <button @click="confirmBooking()" class="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white" x-text="user ? 'Confirm booking' : 'Continue to register'"></button>
+          </div>
+        </section>
+
         <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
           <h2 class="text-lg font-bold" x-text="t('auth.login')"></h2>
           <input x-model="authForm.username" :placeholder="t('auth.usernameOrEmail')" class="w-full rounded-lg border px-3 py-2" />
@@ -136,6 +170,8 @@
                   <div>
                     <div class="font-semibold" x-text="courtLabel(b)"></div>
                     <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+                    <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? 'Double' : 'Single'} · ${b.rentRacquets ? b.rentRacquets + ' racquet(s) rented' : 'No racquet rental'}`"></div>
+                    <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
                     <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
                   </div>
                   <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
@@ -185,7 +221,9 @@
                   <div>
                     <div class="font-semibold" x-text="courtLabel(b)"></div>
                     <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
-                    <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)} · user ${String(b.userId||'').slice(0,8)}`"></div>
+                    <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? 'Double' : 'Single'} · ${b.rentRacquets ? b.rentRacquets + ' racquet(s)' : 'No racquets'} · user ${String(b.userId||'').slice(0,8)}`"></div>
+                    <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
+                    <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)}`"></div>
                   </div>
                   <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
                 </div>

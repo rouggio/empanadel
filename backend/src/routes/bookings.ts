@@ -19,10 +19,23 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
   fastify.post("/api/bookings", { preHandler: [fastify.authenticate] }, async (req, reply) => {
     const parsed = bookingIntentSchema.safeParse((req as any).body);
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
-    const { court_id, date, start_time } = parsed.data;
+    const { court_id, date, start_time, notes, rent_racquets, players } = parsed.data as any;
+    // Default players per court type if not provided: tennis 2 (single), padel 4 (double)
+    let playersVal = players;
+    if (playersVal === undefined) {
+      const dbTmp: any = (fastify as any).db;
+      if (dbTmp) {
+        try {
+          const { courts } = await import("../db/schema.js");
+          const cRows = await dbTmp.select().from(courts).where(eq(courts.id, court_id)).limit(1);
+          const cType = cRows[0]?.type;
+          playersVal = cType === "padel" ? 4 : 2;
+        } catch { playersVal = 2; }
+      } else playersVal = 2;
+    }
     const db: any = (fastify as any).db;
     const user = (req as any).user;
-    if (!db) return reply.status(201).send({ id: randomUUID(), status: "pending_approval", ...parsed.data });
+    if (!db) return reply.status(201).send({ id: randomUUID(), status: "pending_approval", ...parsed.data, players: playersVal });
 
     let duration = 60;
     const dayOfWeek = new Date(date + "T12:00:00Z").getUTCDay();
@@ -52,7 +65,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
 
     const [row] = await db
       .insert(bookings)
-      .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any })
+      .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any, notes: notes ?? null, rentRacquets: rent_racquets ?? 0, players: playersVal })
       .returning();
     return reply.status(201).send(row);
   });

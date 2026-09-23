@@ -18,17 +18,20 @@ function app() {
     selectedDate: new Date().toISOString().slice(0, 10),
     courts: [] as Court[],
     availability: {} as Record<string, Array<{ start: string; end: string; status: string }>>,
-    pendingIntent: null as null | { courtId: string; date: string; startTime: string; courtLabel?: string },
+    pendingIntent: null as null | { courtId: string; date: string; startTime: string; courtLabel?: string; courtType?: string; notes?: string; rentRacquets?: number; players?: number },
+    confirmNotes: "" as string,
+    confirmRent: 0 as number,
+    confirmPlayers: "single" as "single" | "double",
     holdCountdown: null as string | null,
     _holdTimer: null as number | null,
     authForm: { username: "", password: "" },
     regForm: { username: "", email: "", first_name: "", last_name: "", password: "" },
     authError: "" as string,
-    bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; courtNumber?: number; courtType?: string; courtName?: string }>,
+    bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; notes?: string; rentRacquets?: number; players?: number; courtNumber?: number; courtType?: string; courtName?: string }>,
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
     bookingsLoading: false as boolean,
     bookingsError: "" as string,
-    adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string }>,
+    adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string; notes?: string; rentRacquets?: number; players?: number }>,
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
@@ -114,27 +117,56 @@ function app() {
     },
 
     async selectSlot(court: Court, slot: { start: string; end: string; status: string }) {
-      // Admin can book like any authenticated user
-      if (this.user) {
-        const token = localStorage.getItem("token");
-        const res = await fetch("/api/bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ court_id: court.id, date: this.selectedDate, start_time: slot.start }),
-        });
-        if (res.ok) {
-          await this.loadBookings();
-          if (this.user.role === "admin") await this.loadAdminBookings();
-          this.view = "me";
-          location.hash = "me";
-        } else alert("Booking failed: " + (await res.text()));
-      } else {
-        // Deferred flow: no DB hold, store intent locally and ask to register
-        this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `Court ${court.number} · ${court.type}` };
-        localStorage.setItem("pending_booking_intent", JSON.stringify(this.pendingIntent));
+      const defaultPlayers = court.type === "padel" ? "double" as const : "single" as const;
+      this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `Court ${court.number} · ${court.type}`, courtType: court.type };
+      this.confirmNotes = "";
+      this.confirmRent = 0;
+      this.confirmPlayers = defaultPlayers;
+      localStorage.setItem("pending_booking_intent", JSON.stringify({ ...this.pendingIntent, notes: "", rentRacquets: 0, players: defaultPlayers === "single" ? 2 : 4 }));
+      this.view = "confirm";
+      location.hash = "confirm";
+    },
+
+    async confirmBooking() {
+      if (!this.pendingIntent) return;
+      const payload: any = {
+        court_id: this.pendingIntent.courtId,
+        date: this.pendingIntent.date,
+        start_time: this.pendingIntent.startTime,
+        notes: this.confirmNotes || null,
+        rent_racquets: this.confirmRent,
+        players: this.confirmPlayers === "single" ? 2 : 4,
+      };
+      // Store latest choices into pendingIntent for deferred register flow
+      this.pendingIntent.notes = this.confirmNotes;
+      this.pendingIntent.rentRacquets = this.confirmRent;
+      this.pendingIntent.players = payload.players;
+      localStorage.setItem("pending_booking_intent", JSON.stringify(this.pendingIntent));
+
+      if (!this.user) {
         this.view = "register";
         location.hash = "register";
+        return;
       }
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) { alert("Booking failed: " + (await res.text())); return; }
+      localStorage.removeItem("pending_booking_intent");
+      this.pendingIntent = null;
+      await this.loadBookings();
+      if (this.user.role === "admin") await this.loadAdminBookings();
+      await this.loadAvailability();
+      this.view = "me";
+      location.hash = "me";
+    },
+
+    cancelConfirm() {
+      this.view = "courts";
+      location.hash = "courts";
     },
 
     async register() {
@@ -148,13 +180,22 @@ function app() {
       if (!res.ok) { this.authError = data.error || JSON.stringify(data); return; }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
-      // After registration, create the deferred booking if intent exists
+      // After registration, create the deferred booking if intent exists (with notes/rent/players from confirm)
       if (this.pendingIntent) {
         const token = data.token;
+        const payload: any = { court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime };
+        if (this.pendingIntent.notes) payload.notes = this.pendingIntent.notes;
+        if (this.pendingIntent.rentRacquets !== undefined) payload.rent_racquets = this.pendingIntent.rentRacquets;
+        if (this.pendingIntent.players) payload.players = this.pendingIntent.players;
+        else {
+          // fallback defaults per court type
+          const c = this.courts.find((x) => x.id === this.pendingIntent!.courtId);
+          payload.players = c?.type === "padel" ? 4 : 2;
+        }
         const bookingRes = await fetch("/api/bookings", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime }),
+          body: JSON.stringify(payload),
         });
         if (!bookingRes.ok) {
           const err = await bookingRes.text();
@@ -184,13 +225,17 @@ function app() {
         setLang(this.lang);
         localStorage.setItem("lang", this.lang);
       }
-      // If guest had a deferred intent, create booking now (also for existing users)
+      // If guest had a deferred intent, create booking now (also for existing users) with stored notes/rent/players
       if (this.pendingIntent) {
         const token = data.token;
+        const payload: any = { court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime };
+        if (this.pendingIntent.notes) payload.notes = this.pendingIntent.notes;
+        if (this.pendingIntent.rentRacquets !== undefined) payload.rent_racquets = this.pendingIntent.rentRacquets;
+        if (this.pendingIntent.players) payload.players = this.pendingIntent.players;
         const bookingRes = await fetch("/api/bookings", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime }),
+          body: JSON.stringify(payload),
         });
         if (!bookingRes.ok) {
           const err = await bookingRes.text();
@@ -242,6 +287,9 @@ function app() {
           startTime: (r.startTime || r.start_time || "").slice(0,5),
           endTime: (r.endTime || r.end_time || "").slice(0,5),
           status: r.status,
+          notes: r.notes,
+          rentRacquets: r.rentRacquets ?? r.rent_racquets ?? 0,
+          players: r.players ?? 2,
           courtNumber: r.courtNumber,
           courtType: r.courtType,
           courtName: r.courtName,
@@ -277,6 +325,9 @@ function app() {
           endTime: (r.endTime || r.end_time || "").slice(0,5),
           status: r.status,
           userId: r.userId || r.user_id,
+          notes: r.notes,
+          rentRacquets: r.rentRacquets ?? r.rent_racquets ?? 0,
+          players: r.players ?? 2,
         }));
       } catch (e: any) { this.adminError = e.message || String(e); }
       finally { this.adminLoading = false; }

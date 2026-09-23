@@ -70,7 +70,11 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
       for (const b of activeBookings) {
         const bs = b.startTime.slice(0, 5);
         const be = b.endTime.slice(0, 5);
-        if (overlaps(slotRange, { start: bs, end: be })) return { ...slot, status: "booked" as const };
+        if (overlaps(slotRange, { start: bs, end: be })) {
+          // Yellow for pending approval (admin view), red for approved
+          if (b.status === "pending_approval") return { ...slot, status: "pending_approval" as const };
+          return { ...slot, status: "booked" as const };
+        }
       }
       return { ...slot, status: "available" as const };
     });

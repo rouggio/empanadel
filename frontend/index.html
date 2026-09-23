@@ -82,7 +82,7 @@
                       @click="selectSlot(court, slot)"
                       :disabled="slot.status!=='available'"
                       class="rounded-lg border px-2 py-2 text-xs font-medium"
-                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-400' : 'bg-zinc-100 text-zinc-400'"
+                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-400' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-zinc-100 text-zinc-400'"
                       x-text="`${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
                     ></button>
                   </template>

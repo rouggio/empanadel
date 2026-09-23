@@ -233,10 +233,15 @@ function app() {
         this.pendingIntent = null;
       }
       await this.loadBookings();
-      // Admin lands on his own bookings too
-      this.view = "me";
-      location.hash = "me";
-      if (this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+      // Admin lands on courts, visitor on my bookings
+      if (this.user?.role === "admin") {
+        this.view = "courts";
+        location.hash = "courts";
+        this.loadAdminBookings(); this.loadAdminSettings();
+      } else {
+        this.view = "me";
+        location.hash = "me";
+      }
     },
 
     async login() {
@@ -273,9 +278,14 @@ function app() {
         this.pendingIntent = null;
       }
       await this.loadBookings();
-      if (this.user?.role === "admin") { await this.loadAdminBookings(); await this.loadAdminSettings(); }
-      this.view = "me";
-      location.hash = "me";
+      if (this.user?.role === "admin") {
+        await this.loadAdminBookings(); await this.loadAdminSettings();
+        this.view = "courts";
+        location.hash = "courts";
+      } else {
+        this.view = "me";
+        location.hash = "me";
+      }
     },
 
     filteredBookings() {

@@ -44,6 +44,7 @@ function app() {
     editNotes: "" as string,
     editRent: 0 as number,
     editPlayers: "single" as "single" | "double",
+    timetableAdminSelected: null as null | { bookingId: string; courtId: string; date: string; startTime: string },
 
     t(key: string): string {
       return translate(this.lang, key);
@@ -126,7 +127,12 @@ function app() {
       }
     },
 
-    async selectSlot(court: Court, slot: { start: string; end: string; status: string }) {
+    async selectSlot(court: Court, slot: { start: string; end: string; status: string; bookingId?: string | null }) {
+      // Admin clicking a pending slot → show approve/reject inline
+      if ((slot as any).status === "pending_approval" && this.user?.role === "admin" && (slot as any).bookingId) {
+        this.timetableAdminSelected = { bookingId: (slot as any).bookingId, courtId: court.id, date: this.selectedDate, startTime: slot.start };
+        return;
+      }
       const defaultPlayers = court.type === "padel" ? "double" as const : "single" as const;
       this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `Court ${court.number} · ${court.type}`, courtType: court.type };
       this.confirmNotes = "";
@@ -135,6 +141,18 @@ function app() {
       localStorage.setItem("pending_booking_intent", JSON.stringify({ ...this.pendingIntent, notes: "", rentRacquets: 0, players: defaultPlayers === "single" ? 2 : 4 }));
       this.view = "confirm";
       location.hash = "confirm";
+    },
+
+    async timetableApprove() {
+      if (!this.timetableAdminSelected) return;
+      await this.approveBooking(this.timetableAdminSelected.bookingId);
+      this.timetableAdminSelected = null;
+    },
+
+    async timetableReject() {
+      if (!this.timetableAdminSelected) return;
+      await this.rejectBooking(this.timetableAdminSelected.bookingId);
+      this.timetableAdminSelected = null;
     },
 
     async confirmBooking() {

@@ -59,24 +59,22 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
       for (const bl of relevantBlocks) {
         const blStart = new Date(bl.startAt).toISOString().slice(11, 16);
         const blEnd = new Date(bl.endAt).toISOString().slice(11, 16);
-        // Simplified: blocks that span this date, check time overlap
-        if (overlaps(slotRange, { start: blStart, end: blEnd })) return { ...slot, status: "blocked" as const };
+        if (overlaps(slotRange, { start: blStart, end: blEnd })) return { ...slot, status: "blocked" as const, bookingId: null };
       }
       for (const ru of relevantRules) {
         const rs = ru.startTime.slice(0, 5);
         const re = ru.endTime.slice(0, 5);
-        if (overlaps(slotRange, { start: rs, end: re })) return { ...slot, status: "blocked" as const };
+        if (overlaps(slotRange, { start: rs, end: re })) return { ...slot, status: "blocked" as const, bookingId: null };
       }
       for (const b of activeBookings) {
         const bs = b.startTime.slice(0, 5);
         const be = b.endTime.slice(0, 5);
         if (overlaps(slotRange, { start: bs, end: be })) {
-          // Yellow for pending approval (admin view), red for approved
-          if (b.status === "pending_approval") return { ...slot, status: "pending_approval" as const };
-          return { ...slot, status: "booked" as const };
+          if (b.status === "pending_approval") return { ...slot, status: "pending_approval" as const, bookingId: b.id, bookingNotes: b.notes, bookingUserId: b.userId };
+          return { ...slot, status: "booked" as const, bookingId: b.id };
         }
       }
-      return { ...slot, status: "available" as const };
+      return { ...slot, status: "available" as const, bookingId: null };
     });
 
     return reply.send({ court_id, date, slots });

@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
+import cookie from "@fastify/cookie";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -16,6 +17,7 @@ import timetableRoutes from "./routes/timetable.js";
 import blockRoutes from "./routes/blocks.js";
 import settingsRoutes from "./routes/settings.js";
 import userRoutes from "./routes/users.js";
+import { createDb } from "./db/connection.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +27,16 @@ export async function buildApp() {
     logger: { level: process.env.LOG_LEVEL || "info" },
   });
 
+  // DB — attach to fastify instance if DATABASE_URL present (Render PG or local docker)
+  if (process.env.DATABASE_URL) {
+    const { db, pool } = createDb(process.env.DATABASE_URL);
+    (app as any).db = db;
+    (app as any).pool = pool;
+    app.addHook("onClose", async () => {
+      await pool.end();
+    });
+  }
+
   // CORS — same-origin in single-service mode; if CORS_ORIGIN set, use it (split Static Site)
   const corsOrigin = process.env.CORS_ORIGIN;
   await app.register(cors, {
@@ -32,6 +44,7 @@ export async function buildApp() {
     credentials: true,
   });
 
+  await app.register(cookie);
   await app.register(jwt, {
     secret: process.env.JWT_SECRET || "dev-secret-change-me-32chars!!",
     sign: { expiresIn: process.env.JWT_EXPIRES_IN || "15m" },

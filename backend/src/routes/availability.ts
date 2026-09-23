@@ -1,12 +1,80 @@
 import type { FastifyInstance } from "fastify";
-import { splitIntoSlots } from "../services/availability.js";
+import { splitIntoSlots, overlaps } from "../services/availability.js";
+import { timetables, bookings, blocks, blockingRules, appSettings } from "../db/schema.js";
+import { eq, and } from "drizzle-orm";
 
 export default async function availabilityRoutes(fastify: FastifyInstance) {
   fastify.get("/api/availability", async (req, reply) => {
     const { court_id, date } = (req.query as any) || {};
     if (!court_id || !date) return reply.status(400).send({ error: "court_id and date required (YYYY-MM-DD)" });
-    // TODO: load timetable + blocks + bookings, compute slots
-    const demoSlots = splitIntoSlots("08:00", "22:00", 60).map((s) => ({ ...s, status: "available" as const }));
-    return reply.send({ court_id, date, slots: demoSlots });
+
+    const db: any = (fastify as any).db;
+    if (!db) {
+      // Demo without DB
+      const demoSlots = splitIntoSlots("08:00", "22:00", 60).map((s) => ({ ...s, status: "available" as const }));
+      return reply.send({ court_id, date, slots: demoSlots });
+    }
+
+    const dayOfWeek = new Date(date + "T12:00:00Z").getUTCDay();
+    // Load timetable: court-specific override or global
+    let timetableRows = await db.select().from(timetables).where(eq(timetables.courtId, court_id));
+    let tt = timetableRows.find((r: any) => r.dayOfWeek === dayOfWeek);
+    if (!tt) {
+      const globalRows = await db.select().from(timetables).where(eq(timetables.courtId, null as any));
+      // drizzle eq with null needs isNull; fallback query all and filter
+      const all = await db.select().from(timetables);
+      tt = all.find((r: any) => r.courtId === null && r.dayOfWeek === dayOfWeek);
+    }
+    if (!tt || tt.isClosed) return reply.send({ court_id, date, slots: [] });
+
+    let duration = tt.slotDurationMinutes;
+    if (!duration) {
+      const settings = await db.select().from(appSettings).where(eq(appSettings.id, 1));
+      duration = settings[0]?.defaultSlotDurationMinutes ?? 60;
+    }
+    if (!tt.openTime || !tt.closeTime) return reply.send({ court_id, date, slots: [] });
+    const baseSlots = splitIntoSlots(tt.openTime.slice(0, 5), tt.closeTime.slice(0, 5), duration);
+
+    // Bookings for that court+date (active holds)
+    const bookingRows = await db.select().from(bookings).where(and(eq(bookings.courtId, court_id), eq(bookings.date, date)));
+    const activeBookings = bookingRows.filter((b: any) => ["pending_registration", "pending_approval", "approved"].includes(b.status) && !(b.status === "pending_registration" && b.expiresAt && new Date(b.expiresAt) < new Date()));
+
+    // Ad-hoc blocks
+    const dayStart = new Date(date + "T00:00:00Z");
+    const dayEnd = new Date(date + "T23:59:59Z");
+    const blockRows = await db.select().from(blocks);
+    const relevantBlocks = blockRows.filter((bl: any) => {
+      const s = new Date(bl.startAt);
+      const e = new Date(bl.endAt);
+      return s <= dayEnd && e >= dayStart && (!bl.courtId || String(bl.courtId) === String(court_id));
+    });
+
+    // Recurring rules
+    const ruleRows = await db.select().from(blockingRules).where(eq(blockingRules.isActive, true));
+    const relevantRules = ruleRows.filter((ru: any) => ru.dayOfWeek === dayOfWeek && (!ru.courtId || String(ru.courtId) === String(court_id)));
+
+    const slots = baseSlots.map((slot) => {
+      const slotRange = { start: slot.start, end: slot.end };
+      // Check ad-hoc blocks
+      for (const bl of relevantBlocks) {
+        const blStart = new Date(bl.startAt).toISOString().slice(11, 16);
+        const blEnd = new Date(bl.endAt).toISOString().slice(11, 16);
+        // Simplified: blocks that span this date, check time overlap
+        if (overlaps(slotRange, { start: blStart, end: blEnd })) return { ...slot, status: "blocked" as const };
+      }
+      for (const ru of relevantRules) {
+        const rs = ru.startTime.slice(0, 5);
+        const re = ru.endTime.slice(0, 5);
+        if (overlaps(slotRange, { start: rs, end: re })) return { ...slot, status: "blocked" as const };
+      }
+      for (const b of activeBookings) {
+        const bs = b.startTime.slice(0, 5);
+        const be = b.endTime.slice(0, 5);
+        if (overlaps(slotRange, { start: bs, end: be })) return { ...slot, status: "booked" as const };
+      }
+      return { ...slot, status: "available" as const };
+    });
+
+    return reply.send({ court_id, date, slots });
   });
 }

@@ -18,8 +18,7 @@ function app() {
     selectedDate: new Date().toISOString().slice(0, 10),
     courts: [] as Court[],
     availability: {} as Record<string, Array<{ start: string; end: string; status: string }>>,
-    guestToken: null as string | null,
-    holdExpiresAt: null as string | null,
+    pendingIntent: null as null | { courtId: string; date: string; startTime: string; courtLabel?: string },
     holdCountdown: null as string | null,
     _holdTimer: null as number | null,
     authForm: { username: "", password: "" },
@@ -57,9 +56,7 @@ function app() {
     async init() {
       this.lang = detectLang();
       setLang(this.lang);
-      this.guestToken = localStorage.getItem("guest_token");
-      this.holdExpiresAt = localStorage.getItem("hold_expires_at");
-      this.startHoldCountdown();
+      try { this.pendingIntent = JSON.parse(localStorage.getItem("pending_booking_intent") || "null"); } catch { this.pendingIntent = null; }
       await this.loadCourts();
       const token = localStorage.getItem("token");
       if (token) {
@@ -117,6 +114,7 @@ function app() {
     },
 
     async selectSlot(court: Court, slot: { start: string; end: string; status: string }) {
+      // Admin can book like any authenticated user
       if (this.user) {
         const token = localStorage.getItem("token");
         const res = await fetch("/api/bookings", {
@@ -126,36 +124,17 @@ function app() {
         });
         if (res.ok) {
           await this.loadBookings();
+          if (this.user.role === "admin") await this.loadAdminBookings();
           this.view = "me";
           location.hash = "me";
         } else alert("Booking failed: " + (await res.text()));
       } else {
-        const res = await fetch("/api/bookings/intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ court_id: court.id, date: this.selectedDate, start_time: slot.start }),
-        });
-        const data = await res.json().catch(() => ({}));
-        this.guestToken = data.guest_token || "demo-token";
-        this.holdExpiresAt = data.expires_at || new Date(Date.now() + 30 * 60000).toISOString();
-        if (this.guestToken) localStorage.setItem("guest_token", this.guestToken);
-        if (this.holdExpiresAt) localStorage.setItem("hold_expires_at", this.holdExpiresAt);
-        this.startHoldCountdown();
+        // Deferred flow: no DB hold, store intent locally and ask to register
+        this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `Court ${court.number} · ${court.type}` };
+        localStorage.setItem("pending_booking_intent", JSON.stringify(this.pendingIntent));
         this.view = "register";
+        location.hash = "register";
       }
-    },
-
-    startHoldCountdown() {
-      if (this._holdTimer) window.clearInterval(this._holdTimer);
-      if (!this.holdExpiresAt) { this.holdCountdown = null; return; }
-      const tick = () => {
-        const diff = new Date(this.holdExpiresAt!).getTime() - Date.now();
-        if (diff <= 0) { this.holdCountdown = this.t("status.expired"); this.guestToken = null; localStorage.removeItem("guest_token"); localStorage.removeItem("hold_expires_at"); if (this._holdTimer) window.clearInterval(this._holdTimer); return; }
-        const m = Math.floor(diff / 60000); const s = Math.floor((diff % 60000) / 1000);
-        this.holdCountdown = `${m}:${String(s).padStart(2, "0")}`;
-      };
-      tick();
-      this._holdTimer = window.setInterval(tick, 1000);
     },
 
     async register() {
@@ -163,16 +142,32 @@ function app() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.regForm, preferred_language: this.lang, guest_token: this.guestToken || undefined }),
+        body: JSON.stringify({ ...this.regForm, preferred_language: this.lang }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { this.authError = data.error || JSON.stringify(data); return; }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
-      localStorage.removeItem("guest_token"); localStorage.removeItem("hold_expires_at");
+      // After registration, create the deferred booking if intent exists
+      if (this.pendingIntent) {
+        const token = data.token;
+        const bookingRes = await fetch("/api/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime }),
+        });
+        if (!bookingRes.ok) {
+          const err = await bookingRes.text();
+          this.authError = `Registered but booking failed: ${err} — you can retry from Courts`;
+        }
+        localStorage.removeItem("pending_booking_intent");
+        this.pendingIntent = null;
+      }
       await this.loadBookings();
+      // Admin lands on his own bookings too
       this.view = "me";
       location.hash = "me";
+      if (this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
     },
 
     async login() {
@@ -189,7 +184,23 @@ function app() {
         setLang(this.lang);
         localStorage.setItem("lang", this.lang);
       }
+      // If guest had a deferred intent, create booking now (also for existing users)
+      if (this.pendingIntent) {
+        const token = data.token;
+        const bookingRes = await fetch("/api/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime }),
+        });
+        if (!bookingRes.ok) {
+          const err = await bookingRes.text();
+          this.authError = `Login ok but booking failed: ${err}`;
+        }
+        localStorage.removeItem("pending_booking_intent");
+        this.pendingIntent = null;
+      }
       await this.loadBookings();
+      if (this.user?.role === "admin") { await this.loadAdminBookings(); await this.loadAdminSettings(); }
       this.view = "me";
       location.hash = "me";
     },

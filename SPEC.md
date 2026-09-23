@@ -1,7 +1,7 @@
 # Empanadel — Tennis & Padel Court Booking Web App — Specification
 
-> Version: 0.1.4 (Draft) — 2026-09-23
-> Status: Implementation — i18n added: IT/EN/FR/DE/ES + stored preferred_language
+> Version: 0.1.5 (Draft) — 2026-09-23
+> Status: Implementation — deferred booking: no anonymous hold, booking created only after register
 > Stack: Frontend HTML + lightweight JS framework (Aurora-like) · Backend Node.js + TypeScript (Fastify + Drizzle) · PostgreSQL · Mobile-first · i18n (5 langs) · Deploy: Render.com (single Web Service)
 
 ---
@@ -25,8 +25,8 @@ Non-goals for MVP: payments, native mobile apps, real-time chat, external calend
 
 ### 2.1 Club Visitor (Unauthenticated / Guest)
 - Not yet a registered user. Can browse courts and availability without an account.
-- Can *initiate* a booking request (select court + date + time slot).
-- Booking is **not confirmed** until visitor completes registration. System holds the request temporarily and requires registration to finalize.
+- Can *select* a desired slot (court + date + time) — **no booking row is created** while anonymous. Intent is stored only locally (frontend `localStorage`).
+- Booking is **created only after registration** completes (`POST /api/bookings` with JWT). No `pending_registration` hold is stored for anonymous users.
 - After registration, becomes an `associate` or retains `visitor` role with booking history.
 
 > Decision needed: Does a visitor auto-promote to `associate` after first confirmed booking, or remain `visitor` until admin upgrades? Proposed: `visitor` is a persistent role; association is a separate admin-managed flag/status.
@@ -47,8 +47,8 @@ Non-goals for MVP: payments, native mobile apps, real-time chat, external calend
 | Capability | Visitor (guest) | Visitor/Associate (auth) | Admin |
 |---|---:|---:|---:|
 | Browse courts & availability | ✓ | ✓ | ✓ |
-| Initiate booking request | ✓ (pending registration) | ✓ | ✓ (on behalf) |
-| Confirm booking (after register) | ✓ via registration | ✓ immediate pending | — |
+| Initiate booking request | ✓ (local intent, no DB) | ✓ | ✓ (on behalf) |
+| Confirm booking (after register) | ✓ booking created post-register | ✓ immediate pending | — |
 | View own bookings | — | ✓ | ✓ |
 | Cancel own pending booking | — | ✓ | ✓ |
 | View all bookings | — | — | ✓ |
@@ -100,12 +100,12 @@ Auth: **JWT** (short-lived access 15m + refresh 7d, stored in httpOnly cookie or
 **Booking**
 - `id` UUID PK
 - `court_id` UUID FK
-- `user_id` UUID FK nullable (null while visitor hasn't registered — linked to a temporary `booking_intent` or held with `guest_token`)
+- `user_id` UUID FK **NOT NULL** (booking only created for authenticated user; legacy nullable + `guest_token`/`expires_at` kept for migration compat but unused in new flow)
 - `date` DATE
 - `start_time`, `end_time` TIME (or `start_at`, `end_at` TIMESTAMPTZ)
-- `status` ENUM: `pending_registration`, `pending_approval`, `approved`, `rejected`, `cancelled`, `expired`
-- `guest_token` VARCHAR nullable (for unauth visitor intent, 24h TTL)
-- `expires_at` TIMESTAMPTZ nullable (for `pending_registration` hold)
+- `status` ENUM: `pending_approval`, `approved`, `rejected`, `cancelled` (+ legacy `pending_registration`, `expired` kept but not created for new bookings)
+- `guest_token` VARCHAR nullable (legacy, deprecated — no longer used)
+- `expires_at` TIMESTAMPTZ nullable (legacy, deprecated)
 - `reviewed_by` UUID FK nullable (admin)
 - `created_at`, `updated_at`
 
@@ -151,21 +151,19 @@ Ensure `User` and `Court.type` already support this without migration.
 ### 4.1 States
 
 ```
-[Visitor selects slot]
-        ↓
-pending_registration ──(register within TTL)──→ pending_approval ──(admin approves)──→ approved
-        │                                          │──(admin rejects)──→ rejected
-        │                                          └──(user cancels)──→ cancelled
-        └──(TTL expires)──→ expired
+[Visitor selects slot] ──(stored locally, no DB)──→ [registers] ──→ pending_approval ──(admin approves)──→ approved
+                                                            │──(admin rejects)──→ rejected
+                                                            └──(user cancels)──→ cancelled
 [Associate selects slot] ──→ pending_approval ──→ (same as above)
+Legacy: pending_registration / expired kept for backwards compat but not created for new visitor bookings
 ```
 
-### 4.2 Flow — Visitor (deferred registration)
+### 4.2 Flow — Visitor (deferred registration) — updated 2026-09-23: no anonymous DB hold
 
 1. Visitor browses `/courts` → picks court type, date, available slot (computed from timetable minus bookings minus blocks).
-2. Clicks "Book" → enters slot hold: system creates `Booking` with `status=pending_registration`, `guest_token`, `expires_at = now + booking_hold_minutes` (e.g., 30 min). Slot is **soft-held** (not shown as available, but not yet approved).
-3. Prompted to register: `username`, `email`, `password`, `first_name`, `last_name`. On submit, user created, `booking.user_id` linked, status → `pending_approval`, `guest_token` cleared.
-4. If not registered before `expires_at`, booking → `expired` and slot released (cron/job).
+2. Clicks "Book" → **no DB write**. Frontend stores intent locally: `{court_id, date, start_time}` in `localStorage` (`pending_booking_intent`) and shows countdown banner (e.g., "Complete registration to confirm — slot not held").
+3. Prompted to register: `username`, `email`, `password`, `first_name`, `last_name`, `preferred_language`. On submit, user created (`POST /api/auth/register`), JWT returned, then frontend immediately creates booking: `POST /api/bookings {court_id, date, start_time}` with JWT → status `pending_approval` (or `approved` if `auto_approve_bookings=true`).
+4. If visitor abandons registration, no booking row ever existed — nothing to expire. Slot remains available to others until an authenticated booking succeeds.
 5. Admin sees `pending_approval` queue, approves/rejects. On approval, booking → `approved` and user notified (email/in-app). On reject, slot released.
 
 ### 4.3 Flow — Associate (authenticated)
@@ -250,8 +248,8 @@ GET    /api/availability           ?court_id=&date=YYYY-MM-DD&type=
        → returns slots: { start, end, status: available|booked|blocked|closed }
 
 Bookings
-POST   /api/bookings/intent        {court_id, date, start_time} (guest, returns guest_token, expires_at)
-POST   /api/bookings               {court_id, date, start_time} (auth)
+POST   /api/bookings               {court_id, date, start_time} (auth only — creates pending_approval/approved)
+POST   /api/bookings/intent        {court_id, date, start_time} (deprecated, kept for compat — no longer used; returns 410 or no-op)
 GET    /api/bookings               ?mine=true | (admin: all, filters)
 GET    /api/bookings/:id
 POST   /api/bookings/:id/approve   (admin)
@@ -449,7 +447,7 @@ function getAvailability(court, date):
   slot_duration = timetable.slot_duration_minutes ?? app_settings.default_slot_duration_minutes
   slots = splitIntoSlots(timetable.open_time, timetable.close_time, slot_duration)
   blocks = expandBlocks(court, date) // ad-hoc + recurring rules expanded
-  bookings = getBookings(court, date, status in [pending_approval, approved, pending_registration(not expired)])
+  bookings = getBookings(court, date, status in [pending_approval, approved]) // legacy pending_registration excluded — not created for new visitor bookings
   for slot in slots:
     if overlaps(slot, blocks): status=blocked
     else if overlaps(slot, bookings): status=booked
@@ -620,4 +618,4 @@ For split frontend (alternative), add a second `type: web` service with `rootDir
 
 ---
 
-*Next step: i18n IT/EN/FR/DE/ES implemented — `users.preferred_language` persisted, frontend `t()` with 5 JSON locales. Continue Phase 1 wiring and deploy to Render.com.*
+*Next step: deferred booking implemented — visitor intent stored locally, booking created only after register. Continue Phase 1 wiring and deploy to Render.com.*

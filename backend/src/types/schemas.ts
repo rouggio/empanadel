@@ -8,7 +8,6 @@ export const registerSchema = z.object({
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
   preferred_language: preferredLanguageSchema.optional().default("it"),
-  guest_token: z.string().optional(),
 });
 
 export const loginSchema = z.object({

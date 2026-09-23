@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { registerSchema, loginSchema } from "../types/schemas.js";
 import * as argon2 from "argon2";
-import { users, bookings, appSettings } from "../db/schema.js";
-import { eq, or, and } from "drizzle-orm";
+import { users } from "../db/schema.js";
+import { eq, or } from "drizzle-orm";
 
 export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post("/api/auth/register", async (req, reply) => {
     const parsed = registerSchema.safeParse((req as any).body);
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
-    const { password, guest_token, ...data } = parsed.data as any;
+    const { password, ...data } = parsed.data as any;
     const passwordHash = await argon2.hash(password);
 
     const db: any = (fastify as any).db;
@@ -32,17 +32,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
           preferredLanguage: data.preferred_language ?? "it",
         })
         .returning();
-
-      // Link guest_token hold if present: pending_registration -> pending_approval
-      if (guest_token) {
-        const settingsRows = await db.select().from(appSettings).where(eq(appSettings.id, 1));
-        const autoApprove = settingsRows[0]?.autoApproveBookings ?? false;
-        const nextStatus = autoApprove ? "approved" : "pending_approval";
-        await db
-          .update(bookings)
-          .set({ userId: user.id, status: nextStatus as any, guestToken: null, expiresAt: null })
-          .where(and(eq(bookings.guestToken, guest_token), eq(bookings.status, "pending_registration")));
-      }
 
       const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
       // Set refresh as httpOnly cookie (optional)

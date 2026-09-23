@@ -13,7 +13,7 @@
           <a href="#" class="text-lg font-bold tracking-tight" x-text="t('app.name')">Empanadel</a>
           <nav class="hidden gap-6 text-sm md:flex">
             <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
-            <a href="#book" class="hover:text-black" x-text="t('nav.book')"></a>
+            <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>
             <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'" x-text="t('nav.admin')"></a>
           </nav>
           <div class="flex items-center gap-2">
@@ -34,8 +34,8 @@
 
       <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden">
         <a href="#courts" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.courts')"></a>
-        <a href="#book" class="flex flex-1 flex-col items-center text-xs font-semibold" x-text="t('nav.book')"></a>
         <a href="#me" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.myBookings')"></a>
+        <a href="#admin" x-show="user?.role==='admin'" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.admin')"></a>
       </nav>
 
       <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
@@ -50,8 +50,9 @@
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.padel')"></div><div class="text-sm text-zinc-600" x-text="t('card.padel.desc')"></div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.lessons')"></div><div class="text-sm text-zinc-600" x-text="t('card.lessons.desc')"></div></div>
           </div>
-          <div x-show="holdCountdown" class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-            <span x-text="t('hold.expiresIn')"></span> <span class="font-mono font-bold" x-text="holdCountdown"></span> <span x-text="t('hold.confirm')"></span>
+          <div x-show="pendingIntent" class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
+            <span x-text="t('hold.expiresIn') + ':'"></span> <span class="font-mono font-bold" x-text="`${pendingIntent?.courtLabel} · ${pendingIntent?.date} ${pendingIntent?.startTime}`"></span> — <span x-text="t('hold.confirm')"></span>
+            <button @click="view='register'" class="ml-2 rounded-full bg-amber-500 px-3 py-1 text-xs text-white">Register to confirm</button>
           </div>
         </section>
 
@@ -100,7 +101,11 @@
 
         <section x-show="view==='register'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
           <h2 class="text-lg font-bold" x-text="t('auth.registerTitle')"></h2>
-          <p x-show="guestToken" class="text-xs text-zinc-500"><span x-text="t('auth.holdToken')"></span> <span class="font-mono" x-text="guestToken?.slice(0,8)"></span></p>
+          <div x-show="pendingIntent" class="rounded-lg bg-amber-50 p-3 text-xs border border-amber-200">
+            <div class="font-medium" x-text="pendingIntent?.courtLabel"></div>
+            <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
+            <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
+          </div>
           <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
           <input x-model="regForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
           <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />

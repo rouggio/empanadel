@@ -44,7 +44,7 @@ function app() {
     editNotes: "" as string,
     editRent: 0 as number,
     editPlayers: "single" as "single" | "double",
-    timetableAdminSelected: null as null | { bookingId: string; courtId: string; date: string; startTime: string },
+    timetableAdminSelected: null as null | { bookingId: string; courtId: string; date: string; startTime: string; status: string },
 
     t(key: string): string {
       return translate(this.lang, key);
@@ -128,9 +128,10 @@ function app() {
     },
 
     async selectSlot(court: Court, slot: { start: string; end: string; status: string; bookingId?: string | null }) {
-      // Admin clicking a pending slot → show approve/reject inline
-      if ((slot as any).status === "pending_approval" && this.user?.role === "admin" && (slot as any).bookingId) {
-        this.timetableAdminSelected = { bookingId: (slot as any).bookingId, courtId: court.id, date: this.selectedDate, startTime: slot.start };
+      // Admin clicking any booked/pending slot → show approve/reject inline (can reject any booking)
+      const isBookedSlot = (slot as any).status === "pending_approval" || (slot as any).status === "booked";
+      if (isBookedSlot && this.user?.role === "admin" && (slot as any).bookingId) {
+        this.timetableAdminSelected = { bookingId: (slot as any).bookingId, courtId: court.id, date: this.selectedDate, startTime: slot.start, status: (slot as any).status };
         return;
       }
       const defaultPlayers = court.type === "padel" ? "double" as const : "single" as const;

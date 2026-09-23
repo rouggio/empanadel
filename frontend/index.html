@@ -69,13 +69,13 @@
               <button @click="loadAvailability()" class="rounded-lg bg-black px-4 py-2 text-sm text-white" x-text="t('btn.refresh')"></button>
             </div>
           </div>
-          <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border border-amber-300 bg-amber-50 p-4 flex flex-wrap items-center justify-between gap-2">
+          <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">
             <div class="text-sm">
-              <div class="font-semibold" x-text="`Pending: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
-              <div class="text-xs text-zinc-600" x-text="t('status.pending_approval')"></div>
+              <div class="font-semibold" x-text="`${timetableAdminSelected?.status==='pending_approval' ? 'Pending' : 'Booked'}: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
+              <div class="text-xs text-zinc-600" x-text="t('status.'+timetableAdminSelected?.status)"></div>
             </div>
             <div class="flex gap-2">
-              <button @click="timetableApprove()" class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white">Approve</button>
+              <button x-show="timetableAdminSelected?.status==='pending_approval'" @click="timetableApprove()" class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white">Approve</button>
               <button @click="timetableReject()" class="rounded-full border bg-white px-4 py-2 text-xs">Reject</button>
               <button @click="timetableAdminSelected=null" class="rounded-full border bg-white px-3 py-2 text-xs">×</button>
             </div>
@@ -91,9 +91,9 @@
                   <template x-for="slot in availability[court.id] || []" :key="slot.start">
                     <button
                       @click="selectSlot(court, slot)"
-                      :disabled="slot.status!=='available' && !(user?.role==='admin' && slot.status==='pending_approval')"
+                      :disabled="slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked'))"
                       class="rounded-lg border px-2 py-2 text-xs font-medium"
-                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-400' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-zinc-100 text-zinc-400'"
+                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-zinc-100 text-zinc-400'"
                       x-text="`${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
                     ></button>
                   </template>

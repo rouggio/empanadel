@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,61 +7,63 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
-    <!-- Alpine app -->
     <div x-data="app()" x-init="init()" class="flex min-h-screen flex-col">
-      <!-- Header -->
       <header class="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <a href="#" class="text-lg font-bold tracking-tight">Empanadel</a>
+          <a href="#" class="text-lg font-bold tracking-tight" x-text="t('app.name')">Empanadel</a>
           <nav class="hidden gap-6 text-sm md:flex">
-            <a href="#courts" class="hover:text-black">Courts</a>
-            <a href="#book" class="hover:text-black">Book</a>
-            <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'">Admin</a>
+            <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
+            <a href="#book" class="hover:text-black" x-text="t('nav.book')"></a>
+            <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'" x-text="t('nav.admin')"></a>
           </nav>
           <div class="flex items-center gap-2">
-            <span x-show="user" class="text-sm text-zinc-600" x-text="user?.username"></span>
-            <button x-show="!user" @click="view='login'" class="rounded-full bg-black px-4 py-2 text-sm font-medium text-white">Login</button>
-            <button x-show="user" @click="logout()" class="rounded-full border px-4 py-2 text-sm">Logout</button>
+            <label class="hidden text-xs text-zinc-500 md:block" x-text="t('lang.label')"></label>
+            <select @change="setLang($event.target.value)" :value="lang" class="rounded-full border px-2 py-1 text-xs">
+              <option value="it" x-text="t('lang.it')"></option>
+              <option value="en" x-text="t('lang.en')"></option>
+              <option value="fr" x-text="t('lang.fr')"></option>
+              <option value="de" x-text="t('lang.de')"></option>
+              <option value="es" x-text="t('lang.es')"></option>
+            </select>
+            <span x-show="user" class="hidden text-sm text-zinc-600 md:inline" x-text="user?.username"></span>
+            <button x-show="!user" @click="view='login'" class="rounded-full bg-black px-4 py-2 text-sm font-medium text-white" x-text="t('nav.login')"></button>
+            <button x-show="user" @click="logout()" class="rounded-full border px-4 py-2 text-sm" x-text="t('nav.logout')"></button>
           </div>
         </div>
       </header>
 
-      <!-- Mobile bottom nav -->
       <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden">
-        <a href="#courts" class="flex flex-1 flex-col items-center text-xs">Courts</a>
-        <a href="#book" class="flex flex-1 flex-col items-center text-xs font-semibold">Book</a>
-        <a href="#me" class="flex flex-1 flex-col items-center text-xs">My bookings</a>
+        <a href="#courts" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.courts')"></a>
+        <a href="#book" class="flex flex-1 flex-col items-center text-xs font-semibold" x-text="t('nav.book')"></a>
+        <a href="#me" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.myBookings')"></a>
       </nav>
 
-      <!-- Main -->
       <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
-        <!-- Landing -->
         <section x-show="view==='home'" class="space-y-6">
           <div class="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-8 text-white">
-            <h1 class="text-3xl font-bold md:text-4xl">Book your court in seconds</h1>
-            <p class="mt-2 max-w-xl text-white/90">Tennis & padel · Mobile-first · Visitor hold → register → confirm. Admin approves.</p>
-            <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-full bg-white px-6 py-2 text-sm font-semibold text-emerald-700">Check availability</a>
+            <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
+            <p class="mt-2 max-w-xl text-white/90" x-text="t('hero.subtitle')"></p>
+            <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-full bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
           </div>
           <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Tennis</div><div class="text-sm text-zinc-600">Clay & synthetic courts</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Padel</div><div class="text-sm text-zinc-600">Indoor & outdoor</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Lessons & blocks</div><div class="text-sm text-zinc-600">Scheduled rules visible</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.tennis')"></div><div class="text-sm text-zinc-600" x-text="t('card.tennis.desc')"></div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.padel')"></div><div class="text-sm text-zinc-600" x-text="t('card.padel.desc')"></div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.lessons')"></div><div class="text-sm text-zinc-600" x-text="t('card.lessons.desc')"></div></div>
           </div>
           <div x-show="holdCountdown" class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-            Hold expires in <span class="font-mono font-bold" x-text="holdCountdown"></span> — complete registration to confirm.
+            <span x-text="t('hold.expiresIn')"></span> <span class="font-mono font-bold" x-text="holdCountdown"></span> <span x-text="t('hold.confirm')"></span>
           </div>
         </section>
 
-        <!-- Courts + Availability -->
         <section x-show="view==='courts'" class="space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-xl font-bold">Courts</h2>
+            <h2 class="text-xl font-bold" x-text="t('courts.title')"></h2>
             <div class="flex gap-2">
               <select x-model="filterType" class="rounded-lg border px-3 py-2 text-sm">
-                <option value="">All</option><option value="tennis">Tennis</option><option value="padel">Padel</option>
+                <option value="" x-text="t('filter.all')"></option><option value="tennis">Tennis</option><option value="padel">Padel</option>
               </select>
               <input type="date" x-model="selectedDate" class="rounded-lg border px-3 py-2 text-sm" />
-              <button @click="loadAvailability()" class="rounded-lg bg-black px-4 py-2 text-sm text-white">Refresh</button>
+              <button @click="loadAvailability()" class="rounded-lg bg-black px-4 py-2 text-sm text-white" x-text="t('btn.refresh')"></button>
             </div>
           </div>
           <div class="grid gap-3 md:grid-cols-2">
@@ -69,7 +71,7 @@
               <div class="rounded-xl border bg-white p-4">
                 <div class="flex items-center justify-between">
                   <div><div class="font-semibold" x-text="`Court ${court.number} · ${court.type}`"></div><div class="text-xs text-zinc-500" x-text="court.name || court.surface || ''"></div></div>
-                  <span class="rounded-full px-2 py-1 text-xs" :class="court.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'"> <span x-text="court.is_active ? 'Active' : 'Inactive'"></span></span>
+                  <span class="rounded-full px-2 py-1 text-xs" :class="court.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'"> <span x-text="court.is_active ? t('court.active') : t('court.inactive')"></span></span>
                 </div>
                 <div class="mt-3 grid grid-cols-4 gap-2">
                   <template x-for="slot in availability[court.id] || []" :key="slot.start">
@@ -78,7 +80,7 @@
                       :disabled="slot.status!=='available'"
                       class="rounded-lg border px-2 py-2 text-xs font-medium"
                       :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-400' : 'bg-zinc-100 text-zinc-400'"
-                      x-text="`${slot.start} ${slot.status==='available' ? '✓' : slot.status}`"
+                      x-text="`${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
                     ></button>
                   </template>
                 </div>
@@ -87,48 +89,51 @@
           </div>
         </section>
 
-        <!-- Auth -->
         <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-          <h2 class="text-lg font-bold">Login</h2>
-          <input x-model="authForm.username" placeholder="username or email" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="authForm.password" type="password" placeholder="password" class="w-full rounded-lg border px-3 py-2" />
-          <button @click="login()" class="w-full rounded-lg bg-black py-2 text-white">Login</button>
-          <button @click="view='register'" class="w-full text-sm text-zinc-600">Need an account? Register</button>
+          <h2 class="text-lg font-bold" x-text="t('auth.login')"></h2>
+          <input x-model="authForm.username" :placeholder="t('auth.usernameOrEmail')" class="w-full rounded-lg border px-3 py-2" />
+          <input x-model="authForm.password" type="password" :placeholder="t('auth.password')" class="w-full rounded-lg border px-3 py-2" />
+          <button @click="login()" class="w-full rounded-lg bg-black py-2 text-white" x-text="t('auth.login')"></button>
+          <button @click="view='register'" class="w-full text-sm text-zinc-600" x-text="t('auth.needAccount')"></button>
           <p x-show="authError" class="text-sm text-red-600" x-text="authError"></p>
         </section>
 
         <section x-show="view==='register'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-          <h2 class="text-lg font-bold">Register — confirm your booking</h2>
-          <p x-show="guestToken" class="text-xs text-zinc-500">Hold token: <span class="font-mono" x-text="guestToken?.slice(0,8)"></span></p>
-          <input x-model="regForm.username" placeholder="username" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.email" placeholder="email" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.first_name" placeholder="first name" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.last_name" placeholder="last name" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.password" type="password" placeholder="password (≥8)" class="w-full rounded-lg border px-3 py-2" />
-          <button @click="register()" class="w-full rounded-lg bg-emerald-600 py-2 text-white">Register & confirm</button>
-          <button @click="view='login'" class="w-full text-sm text-zinc-600">Already have an account? Login</button>
+          <h2 class="text-lg font-bold" x-text="t('auth.registerTitle')"></h2>
+          <p x-show="guestToken" class="text-xs text-zinc-500"><span x-text="t('auth.holdToken')"></span> <span class="font-mono" x-text="guestToken?.slice(0,8)"></span></p>
+          <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
+          <input x-model="regForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
+          <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
+          <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
+          <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
+          <button @click="register()" class="w-full rounded-lg bg-emerald-600 py-2 text-white" x-text="t('auth.confirm')"></button>
+          <button @click="view='login'" class="w-full text-sm text-zinc-600" x-text="t('auth.haveAccount')"></button>
           <p x-show="authError" class="text-sm text-red-600" x-text="authError"></p>
         </section>
 
-        <!-- My bookings -->
         <section x-show="view==='me'" class="space-y-4">
-          <h2 class="text-xl font-bold">My bookings</h2>
-          <div class="rounded-xl border bg-white p-4 text-sm text-zinc-600">Bookings list — wired to <code>/api/bookings?mine=true</code></div>
+          <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
+          <div class="rounded-xl border bg-white p-4 text-sm text-zinc-600"><span x-text="t('myBookings.hint')"></span> <code>/api/bookings?mine=true</code></div>
+          <div class="rounded-xl border bg-white p-4">
+            <label class="text-sm font-medium" x-text="t('lang.label')"></label>
+            <select @change="setLang($event.target.value)" :value="lang" class="ml-2 rounded border px-2 py-1 text-sm">
+              <option value="it" x-text="t('lang.it')"></option><option value="en" x-text="t('lang.en')"></option><option value="fr" x-text="t('lang.fr')"></option><option value="de" x-text="t('lang.de')"></option><option value="es" x-text="t('lang.es')"></option>
+            </select>
+          </div>
         </section>
 
-        <!-- Admin -->
         <section x-show="view==='admin'" class="space-y-4">
-          <h2 class="text-xl font-bold">Admin</h2>
+          <h2 class="text-xl font-bold" x-text="t('admin.title')"></h2>
           <div class="grid gap-4 md:grid-cols-2">
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Courts</div><div class="text-sm text-zinc-600">CRUD at /api/courts</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Timetable</div><div class="text-sm text-zinc-600">PUT /api/timetable · per-court slot duration 30/60/90/120</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Blocks & rules</div><div class="text-sm text-zinc-600">Ad-hoc + recurring</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold">Settings</div><div class="text-sm">auto_approve toggle + hold/maxAdvance</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.courts')"></div><div class="text-sm text-zinc-600">CRUD at /api/courts</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.timetable')"></div><div class="text-sm text-zinc-600">PUT /api/timetable · 30/60/90/120</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc + recurring</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.settings')"></div><div class="text-sm" x-text="t('admin.settings.desc')"></div></div>
           </div>
         </section>
       </main>
 
-      <footer class="border-t bg-white px-4 py-4 text-center text-xs text-zinc-500">Empanadel · Mobile-first · Backend serves frontend on Render</footer>
+      <footer class="border-t bg-white px-4 py-4 text-center text-xs text-zinc-500"><span x-text="t('footer')"></span> · Empanadel</footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

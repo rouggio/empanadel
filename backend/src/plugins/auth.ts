@@ -5,6 +5,7 @@ export interface JwtPayload {
   id: string;
   username: string;
   role: "visitor" | "associate" | "admin";
+  preferred_language?: "it" | "en" | "fr" | "de" | "es";
 }
 
 declare module "fastify" {

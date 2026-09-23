@@ -1,8 +1,8 @@
 # Empanadel — Tennis & Padel Court Booking Web App — Specification
 
-> Version: 0.1.3 (Draft) — 2026-09-23
-> Status: Pre-implementation — Decisions locked: JWT, Drizzle, configurable approval/slots, single-service static serve on Render.com
-> Stack: Frontend HTML + lightweight JS framework (Aurora-like) · Backend Node.js + TypeScript (Fastify + Drizzle) · PostgreSQL · Mobile-first · Deploy: Render.com (single Web Service)
+> Version: 0.1.4 (Draft) — 2026-09-23
+> Status: Implementation — i18n added: IT/EN/FR/DE/ES + stored preferred_language
+> Stack: Frontend HTML + lightweight JS framework (Aurora-like) · Backend Node.js + TypeScript (Fastify + Drizzle) · PostgreSQL · Mobile-first · i18n (5 langs) · Deploy: Render.com (single Web Service)
 
 ---
 
@@ -73,6 +73,7 @@ Auth: **JWT** (short-lived access 15m + refresh 7d, stored in httpOnly cookie or
 - `password_hash` TEXT (argon2id/bcrypt)
 - `first_name`, `last_name` VARCHAR
 - `role` ENUM: `visitor`, `associate`, `admin`
+- `preferred_language` ENUM: `it`, `en`, `fr`, `de`, `es` — default `it`, persisted per user, used to localise frontend on login (also stored in JWT claim and `localStorage`). Guest default from `navigator.language` → fallback `en`.
 - `is_verified` BOOLEAN (email verified)
 - `created_at`, `updated_at`
 - Future: `membership_number`, `ranking_points`, `ranking_category`
@@ -221,16 +222,17 @@ pending_registration ──(register within TTL)──→ pending_approval ─�
 
 ```
 Auth
-POST   /api/auth/register          {username,email,password,first_name,last_name,guest_token?}
+POST   /api/auth/register          {username,email,password,first_name,last_name,preferred_language?,guest_token?} // preferred_language: it|en|fr|de|es
 POST   /api/auth/login             {username|email, password}
 POST   /api/auth/logout
 POST   /api/auth/verify-email      (future)
 
 Users
-GET    /api/users/me
-PATCH  /api/users/me
+GET    /api/users/me               → { id, username, email, role, preferred_language, ... }
+PATCH  /api/users/me               {first_name?, last_name?, email?, preferred_language?}
 GET    /api/users                  (admin)
 PATCH  /api/users/:id/role         (admin)
+PATCH  /api/users/:id/language     (admin or self) {preferred_language}
 
 Courts
 GET    /api/courts                 ?type=tennis|padel&active=true
@@ -284,6 +286,7 @@ CREATE TYPE user_role AS ENUM ('visitor','associate','admin');
 CREATE TYPE court_type AS ENUM ('tennis','padel');
 CREATE TYPE booking_status AS ENUM ('pending_registration','pending_approval','approved','rejected','cancelled','expired');
 
+CREATE TYPE preferred_language AS ENUM ('it','en','fr','de','es');
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT UNIQUE NOT NULL CHECK (username ~ '^[a-zA-Z0-9_.-]{3,30}$'),
@@ -292,6 +295,7 @@ CREATE TABLE users (
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'visitor',
+  preferred_language preferred_language NOT NULL DEFAULT 'it',
   is_verified BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -417,9 +421,10 @@ Requirement: "Aurora or something similar, lightweight yet powerful". Aurora is 
 - Performance budget: <50kb JS, <100kb CSS, LCP <2.5s on 3G.
 
 ### 7.4 State & Data Fetching
-- Alpine stores for `auth`, `availability`, `bookingIntent`.
+- Alpine stores for `auth`, `availability`, `bookingIntent`, `i18n` (`lang`, `t()`).
 - Fetch via `fetch` to `/api/*` with credentials. Handle 401 → redirect to /login?next=.
 - Guest token stored in `localStorage` + cookie for intent recovery.
+- i18n: `frontend/src/i18n/index.ts` loads `it/en/fr/de/es` JSON, `localStorage.lang` persisted, `PATCH /api/users/me` syncs when authed, `document.documentElement.lang` set.
 
 ---
 
@@ -459,8 +464,8 @@ Cache per `court+date` for ~30s. Invalidate on booking/block/timetable change.
 ## 10. Non-Functional Requirements
 
 - **Mobile-first, responsive**: 320px → 1440px, touch targets ≥44px, no hover-only interactions.
-- **i18n ready**: default language English or Spanish (club locale). Extract strings, use `Intl`.
-- **A11y**: WCAG 2.1 AA.
+- **i18n**: Frontend localised in **Italian, English, French, German, Spanish** (5 languages). All strings via `frontend/src/i18n/` JSON (it/en/fr/de/es), `t(key)` helper, `Intl` for dates/numbers. Language selector in header + mobile nav. Guest: `localStorage.lang` + `navigator.language` fallback; Authenticated: `users.preferred_language` persisted, included in JWT, synced on `PATCH /api/users/me`. `Accept-Language` header respected for future SSR.
+- **A11y**: WCAG 2.1 AA (lang attribute `html[lang]` updated on switch).
 - **Observability**: structured logs (pino), health check `/health`, DB migration tool (e.g., `node-pg-migrate` with TS migrations).
 - **Type Safety**: `strict: true` in `tsconfig.json`, no `any` without justification, Zod schemas as single source of truth for API validation + inferred types.
 - **Deployment (Render.com)**: All services deployed on **Render.com** via Blueprint (`render.yaml`). No self-managed Docker host / VPS. See §11.1 for details.
@@ -615,4 +620,4 @@ For split frontend (alternative), add a second `type: web` service with `rootDir
 
 ---
 
-*Next step: scaffold `backend/` (Fastify + TypeScript + Druzzle + pg + migrations, serves `frontend/dist` via @fastify/static) and `frontend/` (Alpine + Tailwind + Vite) per this spec, add `render.yaml` single-service Blueprint, then implement Phase 1 and deploy to Render.com. Settings `auto_approve_bookings` and per-court `slot_duration_minutes` are configurable via admin UI.*
+*Next step: i18n IT/EN/FR/DE/ES implemented — `users.preferred_language` persisted, frontend `t()` with 5 JSON locales. Continue Phase 1 wiring and deploy to Render.com.*

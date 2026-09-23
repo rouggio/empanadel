@@ -29,6 +29,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           firstName: data.first_name,
           lastName: data.last_name,
           role: "visitor",
+          preferredLanguage: data.preferred_language ?? "it",
         })
         .returning();
 
@@ -43,7 +44,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           .where(and(eq(bookings.guestToken, guest_token), eq(bookings.status, "pending_registration")));
       }
 
-      const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role });
+      const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
       // Set refresh as httpOnly cookie (optional)
       reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }), {
         httpOnly: true,
@@ -51,7 +52,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         sameSite: "lax",
         path: "/",
       });
-      return reply.status(201).send({ user: { id: user.id, username: user.username, email: user.email, role: user.role }, token });
+      return reply.status(201).send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, preferred_language: user.preferredLanguage }, token });
     } catch (e: any) {
       if (String(e.message).includes("unique") || String(e.code) === "23505") {
         return reply.status(409).send({ error: "username or email already taken" });
@@ -84,14 +85,14 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const ok = await argon2.verify(user.passwordHash, password);
     if (!ok) return reply.status(401).send({ error: "Invalid credentials" });
 
-    const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role });
+    const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
     reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
     });
-    return reply.send({ user: { id: user.id, username: user.username, email: user.email, role: user.role }, token });
+    return reply.send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, preferred_language: user.preferredLanguage }, token });
   });
 
   fastify.post("/api/auth/refresh", { preHandler: [fastify.authenticate] }, async (req, reply) => {

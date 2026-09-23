@@ -18,14 +18,18 @@
             <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'" x-text="t('nav.admin')"></a>
           </nav>
           <div class="flex items-center gap-2">
-            <label class="hidden text-xs text-zinc-500 md:block" x-text="t('lang.label')"></label>
-            <select @change="setLang($event.target.value)" :value="lang" class="rounded-full border px-2 py-1 text-xs">
-              <option value="it" x-text="t('lang.it')"></option>
-              <option value="en" x-text="t('lang.en')"></option>
-              <option value="fr" x-text="t('lang.fr')"></option>
-              <option value="de" x-text="t('lang.de')"></option>
-              <option value="es" x-text="t('lang.es')"></option>
-            </select>
+            <template x-if="!user">
+              <div class="flex items-center gap-2">
+                <label class="hidden text-xs text-zinc-500 md:block" x-text="t('lang.label')"></label>
+                <select @change="setLang($event.target.value)" :value="lang" class="rounded-full border px-2 py-1 text-xs">
+                  <option value="it" x-text="t('lang.it')"></option>
+                  <option value="en" x-text="t('lang.en')"></option>
+                  <option value="fr" x-text="t('lang.fr')"></option>
+                  <option value="de" x-text="t('lang.de')"></option>
+                  <option value="es" x-text="t('lang.es')"></option>
+                </select>
+              </div>
+            </template>
             <span x-show="user" class="hidden text-sm text-zinc-600 md:inline" x-text="user?.username"></span>
             <button x-show="!user" @click="view='login'" class="rounded-full bg-black px-4 py-2 text-sm font-medium text-white" x-text="t('nav.login')"></button>
             <button x-show="user" @click="logout()" class="rounded-full border px-4 py-2 text-sm" x-text="t('nav.logout')"></button>
@@ -158,6 +162,12 @@
           <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
           <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
           <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-zinc-500" x-text="t('lang.label')"></label>
+            <select x-model="lang" @change="setLang(lang)" class="rounded-lg border px-3 py-2 text-xs">
+              <option value="it" x-text="t('lang.it')"></option><option value="en" x-text="t('lang.en')"></option><option value="fr" x-text="t('lang.fr')"></option><option value="de" x-text="t('lang.de')"></option><option value="es" x-text="t('lang.es')"></option>
+            </select>
+          </div>
           <button @click="register()" class="w-full rounded-lg bg-emerald-600 py-2 text-white" x-text="t('auth.confirm')"></button>
           <button @click="view='login'" class="w-full text-sm text-zinc-600" x-text="t('auth.haveAccount')"></button>
           <p x-show="authError" class="text-sm text-red-600" x-text="authError"></p>
@@ -211,12 +221,6 @@
                 </div>
               </div>
             </template>
-          </div>
-          <div class="rounded-xl border bg-white p-4">
-            <label class="text-sm font-medium" x-text="t('lang.label')"></label>
-            <select @change="setLang($event.target.value)" :value="lang" class="ml-2 rounded border px-2 py-1 text-sm">
-              <option value="it" x-text="t('lang.it')"></option><option value="en" x-text="t('lang.en')"></option><option value="fr" x-text="t('lang.fr')"></option><option value="de" x-text="t('lang.de')"></option><option value="es" x-text="t('lang.es')"></option>
-            </select>
           </div>
         </section>
 

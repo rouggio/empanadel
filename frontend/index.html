@@ -14,7 +14,6 @@
           <nav class="hidden gap-6 text-sm md:flex">
             <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
             <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>
-            <a href="#profile" x-show="user" class="hover:text-black" x-text="t('nav.profile')"></a>
             <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'" x-text="t('nav.admin')"></a>
           </nav>
           <div class="flex items-center gap-2">
@@ -35,7 +34,7 @@
                 </div>
               </div>
             </template>
-            <span x-show="user" class="hidden text-sm text-zinc-600 md:inline" x-text="user?.username"></span>
+            <a href="#profile" x-show="user" class="hidden text-sm font-medium text-zinc-700 hover:text-black md:inline" x-text="user?.username" @click.prevent="view='profile'; location.hash='profile'; loadProfile()"></a>
             <button x-show="!user" @click="view='login'" class="rounded-full bg-black px-4 py-2 text-sm font-medium text-white" x-text="t('nav.login')"></button>
             <button x-show="user" @click="logout()" class="rounded-full border px-4 py-2 text-sm" x-text="t('nav.logout')"></button>
           </div>

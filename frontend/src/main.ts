@@ -45,9 +45,17 @@ function app() {
     editRent: 0 as number,
     editPlayers: "single" as "single" | "double",
     timetableAdminSelected: null as null | { bookingId: string; courtId: string; date: string; startTime: string; status: string },
+    headerLangOpen: false as boolean,
+    registerLangOpen: false as boolean,
+    profileLangOpen: false as boolean,
 
     t(key: string): string {
       return translate(this.lang, key);
+    },
+
+    flagUrl(lang: string): string {
+      const code = lang === "en" ? "gb" : lang;
+      return `https://flagcdn.com/w20/${code}.png`;
     },
 
     async setLang(lang: Lang) {

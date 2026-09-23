@@ -1,7 +1,7 @@
 # Empanadel — Tennis & Padel Court Booking Web App — Specification
 
-> Version: 0.1.6 (Draft) — 2026-09-23
-> Status: Implementation — booking confirm screen + optional notes
+> Version: 0.1.7 (Draft) — 2026-09-23
+> Status: Implementation — profile (mobile/gender/birthdate) + booking edit (notes/players/rent)
 > Stack: Frontend HTML + lightweight JS framework (Aurora-like) · Backend Node.js + TypeScript (Fastify + Drizzle) · PostgreSQL · Mobile-first · i18n (5 langs) · Deploy: Render.com (single Web Service)
 
 ---
@@ -73,7 +73,10 @@ Auth: **JWT** (short-lived access 15m + refresh 7d, stored in httpOnly cookie or
 - `password_hash` TEXT (argon2id/bcrypt)
 - `first_name`, `last_name` VARCHAR
 - `role` ENUM: `visitor`, `associate`, `admin`
-- `preferred_language` ENUM: `it`, `en`, `fr`, `de`, `es` — default `it`, persisted per user, used to localise frontend on login (also stored in JWT claim and `localStorage`). Guest default from `navigator.language` → fallback `en`.
+- `preferred_language` ENUM: `it`, `en`, `fr`, `de`, `es` — default `it`, persisted per user
+- `mobile` VARCHAR(20) nullable — mobile number
+- `gender` ENUM: `male`, `female`, `other`, `prefer_not_to_say` nullable
+- `birthdate` DATE nullable
 - `is_verified` BOOLEAN (email verified)
 - `created_at`, `updated_at`
 - Future: `membership_number`, `ranking_points`, `ranking_category`
@@ -229,8 +232,8 @@ POST   /api/auth/logout
 POST   /api/auth/verify-email      (future)
 
 Users
-GET    /api/users/me               → { id, username, email, role, preferred_language, ... }
-PATCH  /api/users/me               {first_name?, last_name?, email?, preferred_language?}
+GET    /api/users/me               → { id, username, email, role, preferred_language, first_name, last_name, mobile, gender, birthdate }
+PATCH  /api/users/me               {username?, email?, first_name?, last_name?, preferred_language?, mobile?, gender?, birthdate?} // profile page edits
 GET    /api/users                  (admin)
 PATCH  /api/users/:id/role         (admin)
 PATCH  /api/users/:id/language     (admin or self) {preferred_language}
@@ -252,6 +255,7 @@ GET    /api/availability           ?court_id=&date=YYYY-MM-DD&type=
 
 Bookings
 POST   /api/bookings               {court_id, date, start_time, notes?, rent_racquets?, players?} (auth only — notes 0-1000, rent_racquets 0-4 default 0, players 2|4 (UI Single/Double) default tennis Single=2/padel Double=4; all shown to admin)
+PATCH  /api/bookings/:id           {notes?, rent_racquets?, players?} (owner only, while pending_approval/approved — can edit only notes/players/rent)
 POST   /api/bookings/intent        {court_id, date, start_time} (deprecated, kept for compat — no longer used; returns 410 or no-op)
 GET    /api/bookings               ?mine=true | (admin: all, filters)
 GET    /api/bookings/:id
@@ -288,6 +292,7 @@ CREATE TYPE court_type AS ENUM ('tennis','padel');
 CREATE TYPE booking_status AS ENUM ('pending_registration','pending_approval','approved','rejected','cancelled','expired');
 
 CREATE TYPE preferred_language AS ENUM ('it','en','fr','de','es');
+CREATE TYPE gender AS ENUM ('male','female','other','prefer_not_to_say');
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT UNIQUE NOT NULL CHECK (username ~ '^[a-zA-Z0-9_.-]{3,30}$'),
@@ -297,6 +302,9 @@ CREATE TABLE users (
   last_name TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'visitor',
   preferred_language preferred_language NOT NULL DEFAULT 'it',
+  mobile VARCHAR(20),
+  gender gender,
+  birthdate DATE,
   is_verified BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -624,4 +632,4 @@ For split frontend (alternative), add a second `type: web` service with `rootDir
 
 ---
 
-*Next step: booking confirm screen with optional notes + rent racquets (0-4) implemented — stored in bookings.notes / rent_racquets.*
+*Next step: profile page (username/email/lang/mobile/gender/birthdate) + booking edit (notes/players/rent) implemented.*

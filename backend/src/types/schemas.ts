@@ -62,6 +62,17 @@ export const blockingRuleSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
+export const profileSchema = z.object({
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
+  email: z.string().email().optional(),
+  preferred_language: preferredLanguageSchema.optional(),
+  mobile: z.string().max(20).optional().nullable(),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional().nullable(),
+  birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  first_name: z.string().min(1).max(100).optional(),
+  last_name: z.string().min(1).max(100).optional(),
+});
+
 export const settingsSchema = z.object({
   default_slot_duration_minutes: z.number().int().refine((v) => [30, 60, 90, 120].includes(v)).optional(),
   booking_hold_minutes: z.number().int().min(5).max(120).optional(),

@@ -11,6 +11,7 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "expired",
 ]);
 export const preferredLanguageEnum = pgEnum("preferred_language", ["it", "en", "fr", "de", "es"]);
+export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -21,6 +22,9 @@ export const users = pgTable("users", {
   lastName: varchar("last_name", { length: 100 }).notNull(),
   role: userRoleEnum("role").notNull().default("visitor"),
   preferredLanguage: preferredLanguageEnum("preferred_language").notNull().default("it"),
+  mobile: varchar("mobile", { length: 20 }),
+  gender: genderEnum("gender"),
+  birthdate: date("birthdate"),
   isVerified: boolean("is_verified").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

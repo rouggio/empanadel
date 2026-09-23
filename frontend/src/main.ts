@@ -36,6 +36,14 @@ function app() {
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang },
+    profileLoading: false as boolean,
+    profileError: "" as string,
+    profileSuccess: "" as string,
+    editingBooking: null as string | null,
+    editNotes: "" as string,
+    editRent: 0 as number,
+    editPlayers: "single" as "single" | "double",
 
     t(key: string): string {
       return translate(this.lang, key);
@@ -81,9 +89,11 @@ function app() {
       window.addEventListener("hashchange", () => {
         this.view = location.hash.replace("#", "") || "home";
         if (this.view === "me" && this.user) this.loadBookings();
+        if (this.view === "profile" && this.user) this.loadProfile();
         if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
+      if (this.view === "profile" && this.user) this.loadProfile();
       if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
     },
 
@@ -364,6 +374,68 @@ function app() {
       const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ auto_approve_bookings: next }) });
       if (!res.ok) { alert("Settings failed: " + await res.text()); return; }
       this.adminSettings.auto_approve_bookings = next;
+    },
+
+    async loadProfile() {
+      if (!this.user) return;
+      this.profileLoading = true; this.profileError = ""; this.profileSuccess = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const me = await res.json();
+        this.profileForm = {
+          username: me.username || "",
+          email: me.email || "",
+          first_name: me.first_name || me.firstName || "",
+          last_name: me.last_name || me.lastName || "",
+          mobile: me.mobile || "",
+          gender: me.gender || "",
+          birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
+          preferred_language: me.preferred_language || me.preferredLanguage || this.lang,
+        };
+        this.user = me;
+      } catch (e: any) { this.profileError = e.message || String(e); }
+      finally { this.profileLoading = false; }
+    },
+
+    async saveProfile() {
+      this.profileError = ""; this.profileSuccess = "";
+      const token = localStorage.getItem("token");
+      const payload: any = {};
+      if (this.profileForm.username) payload.username = this.profileForm.username;
+      if (this.profileForm.email) payload.email = this.profileForm.email;
+      if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
+      if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
+      if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;
+      if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
+      if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
+      if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;
+      const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.profileError = await res.text(); return; }
+      const updated = await res.json();
+      this.profileSuccess = "Profile updated";
+      if (updated.preferred_language) { this.lang = updated.preferred_language; setLang(this.lang); localStorage.setItem("lang", this.lang); }
+      this.user = { ...this.user, ...updated };
+    },
+
+    startEditBooking(b: any) {
+      this.editingBooking = b.id;
+      this.editNotes = b.notes || "";
+      this.editRent = b.rentRacquets ?? 0;
+      this.editPlayers = b.players === 4 ? "double" : "single";
+    },
+
+    cancelEditBooking() { this.editingBooking = null; },
+
+    async saveEditBooking(id: string) {
+      const token = localStorage.getItem("token");
+      const payload: any = { notes: this.editNotes || null, rent_racquets: this.editRent, players: this.editPlayers === "single" ? 2 : 4 };
+      const res = await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { alert("Edit failed: " + await res.text()); return; }
+      this.editingBooking = null;
+      await this.loadBookings();
+      if (this.user?.role === "admin") await this.loadAdminBookings();
     },
 
     logout() {

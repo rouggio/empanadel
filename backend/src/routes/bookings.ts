@@ -113,6 +113,37 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     return reply.send(row);
   });
 
+  fastify.patch("/api/bookings/:id", { preHandler: [fastify.authenticate] }, async (req, reply) => {
+    const db: any = (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const { id } = req.params as any;
+    const user = (req as any).user;
+    const rows = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+    if (!rows[0]) return reply.status(404).send({ error: "Not found" });
+    if (String(rows[0].userId) !== String(user.id) && user.role !== "admin") return reply.status(403).send({ error: "Forbidden" });
+    if (!["pending_approval", "approved"].includes(rows[0].status)) return reply.status(400).send({ error: "Only pending or approved bookings can be edited" });
+    const body = (req as any).body as any;
+    const updates: any = {};
+    if (body.notes !== undefined) {
+      if (body.notes !== null && String(body.notes).length > 1000) return reply.status(400).send({ error: "notes max 1000" });
+      updates.notes = body.notes || null;
+    }
+    if (body.rent_racquets !== undefined) {
+      const v = Number(body.rent_racquets);
+      if (!Number.isInteger(v) || v < 0 || v > 4) return reply.status(400).send({ error: "rent_racquets must be 0-4" });
+      updates.rentRacquets = v;
+    }
+    if (body.players !== undefined) {
+      const v = Number(body.players);
+      if (v !== 2 && v !== 4) return reply.status(400).send({ error: "players must be 2 or 4" });
+      updates.players = v;
+    }
+    if (Object.keys(updates).length === 0) return reply.status(400).send({ error: "No editable fields (notes, rent_racquets, players)" });
+    updates.updatedAt = new Date();
+    const [row] = await db.update(bookings).set(updates).where(eq(bookings.id, id)).returning();
+    return reply.send(row);
+  });
+
   fastify.post("/api/bookings/:id/cancel", { preHandler: [fastify.authenticate] }, async (req, reply) => {
     const db: any = (fastify as any).db;
     if (!db) return reply.send({ id: (req.params as any).id, status: "cancelled" });

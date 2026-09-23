@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: empanadel-api
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci --prefix backend && npm run build --prefix backend && npm ci --prefix frontend && npm run build --prefix frontend
+    startCommand: npm run migrate --prefix backend && npm start --prefix backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: empanadel-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLUB_TIMEZONE
+        value: Europe/Rome
+      # Uncomment if you split frontend to Static Site:
+      # - key: CORS_ORIGIN
+      #   sync: false
+
+databases:
+  - name: empanadel-db
+    plan: starter
+    region: frankfurt
+    postgresMajorVersion: 16

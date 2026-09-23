@@ -1,0 +1,70 @@
+import { z } from "zod";
+
+export const registerSchema = z.object({
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/),
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(8).max(128),
+  first_name: z.string().min(1).max(100),
+  last_name: z.string().min(1).max(100),
+  guest_token: z.string().optional(),
+});
+
+export const loginSchema = z.object({
+  username: z.string().optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(1),
+}).refine((d) => d.username || d.email, { message: "username or email required" });
+
+export const courtSchema = z.object({
+  number: z.number().int().positive(),
+  type: z.enum(["tennis", "padel"]),
+  name: z.string().max(100).optional().nullable(),
+  surface: z.string().max(50).optional().nullable(),
+  is_active: z.boolean().optional(),
+});
+
+export const timetableEntrySchema = z.object({
+  court_id: z.string().uuid().nullable().optional(),
+  day_of_week: z.number().int().min(0).max(6),
+  open_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable().optional(),
+  close_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable().optional(),
+  slot_duration_minutes: z.number().int().refine((v) => [30, 60, 90, 120].includes(v)).optional(),
+  is_closed: z.boolean().optional(),
+});
+
+export const timetableBulkSchema = z.array(timetableEntrySchema);
+
+export const bookingIntentSchema = z.object({
+  court_id: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+});
+
+export const blockSchema = z.object({
+  court_id: z.string().uuid().nullable().optional(),
+  start_at: z.string().datetime(),
+  end_at: z.string().datetime(),
+  reason: z.string().min(1).max(500),
+});
+
+export const blockingRuleSchema = z.object({
+  court_id: z.string().uuid().nullable().optional(),
+  day_of_week: z.number().int().min(0).max(6),
+  start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  end_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  reason: z.string().min(1).max(500),
+  valid_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  is_active: z.boolean().optional(),
+});
+
+export const settingsSchema = z.object({
+  default_slot_duration_minutes: z.number().int().refine((v) => [30, 60, 90, 120].includes(v)).optional(),
+  booking_hold_minutes: z.number().int().min(5).max(120).optional(),
+  max_advance_days: z.number().int().min(1).max(90).optional(),
+  min_cancel_hours: z.number().int().min(0).max(48).optional(),
+  auto_approve_bookings: z.boolean().optional(),
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

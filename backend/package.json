@@ -1,0 +1,40 @@
+{
+  "name": "empanadel-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "migrate": "drizzle-kit migrate",
+    "generate": "drizzle-kit generate",
+    "jobs:expire": "tsx src/jobs/expireHolds.ts",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/jwt": "^8.0.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/static": "^7.0.4",
+    "argon2": "^0.41.1",
+    "drizzle-orm": "^0.38.0",
+    "fastify": "^4.28.0",
+    "fastify-plugin": "^4.5.1",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.5",
+    "pino": "^9.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.30.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}

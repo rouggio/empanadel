@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createDb } from "./connection.js";
 import { courts, timetables, users, appSettings } from "./schema.js";
 import * as argon2 from "argon2";

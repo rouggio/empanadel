@@ -22,6 +22,7 @@
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/static": "^7.0.4",
     "argon2": "^0.41.1",
+    "dotenv": "^18.0.3",
     "drizzle-orm": "^0.38.0",
     "fastify": "^4.28.0",
     "fastify-plugin": "^4.5.1",

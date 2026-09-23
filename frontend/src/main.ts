@@ -25,6 +25,10 @@ function app() {
     authForm: { username: "", password: "" },
     regForm: { username: "", email: "", first_name: "", last_name: "", password: "" },
     authError: "" as string,
+    bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; courtNumber?: number; courtType?: string; courtName?: string }>,
+    bookingsTab: "upcoming" as "upcoming" | "past" | "all",
+    bookingsLoading: false as boolean,
+    bookingsError: "" as string,
 
     t(key: string): string {
       return translate(this.lang, key);
@@ -71,7 +75,11 @@ function app() {
       if (hash) this.view = hash;
       window.addEventListener("hashchange", () => {
         this.view = location.hash.replace("#", "") || "home";
+        if (this.view === "me" && this.user) this.loadBookings();
       });
+      if (this.view === "me" && this.user) this.loadBookings();
+      // reload bookings when user becomes authed
+      this.$watch?.("view", (v: string) => { if (v === "me" && this.user) this.loadBookings(); });
     },
 
     filteredCourts() {
@@ -112,8 +120,9 @@ function app() {
           body: JSON.stringify({ court_id: court.id, date: this.selectedDate, start_time: slot.start }),
         });
         if (res.ok) {
-          alert(this.t("status.pending_approval"));
+          await this.loadBookings();
           this.view = "me";
+          location.hash = "me";
         } else alert("Booking failed: " + (await res.text()));
       } else {
         const res = await fetch("/api/bookings/intent", {
@@ -156,7 +165,9 @@ function app() {
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
       localStorage.removeItem("guest_token"); localStorage.removeItem("hold_expires_at");
+      await this.loadBookings();
       this.view = "me";
+      location.hash = "me";
     },
 
     async login() {
@@ -173,7 +184,64 @@ function app() {
         setLang(this.lang);
         localStorage.setItem("lang", this.lang);
       }
-      this.view = "courts";
+      await this.loadBookings();
+      this.view = "me";
+      location.hash = "me";
+    },
+
+    filteredBookings() {
+      const today = new Date().toISOString().slice(0, 10);
+      if (this.bookingsTab === "all") return this.bookings;
+      if (this.bookingsTab === "upcoming") return this.bookings.filter((b) => b.date >= today && !["cancelled","rejected","expired"].includes(b.status));
+      return this.bookings.filter((b) => b.date < today || ["cancelled","rejected","expired"].includes(b.status));
+    },
+
+    courtLabel(b: any): string {
+      if (b.courtName) return `${b.courtName} (#${b.courtNumber})`;
+      const c = this.courts.find((x) => x.id === (b.courtId || b.court_id));
+      if (c) return `Court ${c.number} · ${c.type}${c.name ? " · "+c.name : ""}`;
+      return (b.courtId || b.court_id || "").slice(0,8);
+    },
+
+    statusClass(status: string): string {
+      if (status === "approved") return "bg-emerald-100 text-emerald-700";
+      if (status === "pending_approval" || status === "pending_registration") return "bg-amber-100 text-amber-700";
+      if (status === "rejected" || status === "cancelled" || status === "expired") return "bg-zinc-200 text-zinc-600";
+      return "bg-zinc-100";
+    },
+
+    async loadBookings() {
+      if (!this.user) { this.bookings = []; return; }
+      this.bookingsLoading = true; this.bookingsError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/bookings?mine=true", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const rows = await res.json();
+        // normalize snake/camel + enrich with court info
+        this.bookings = (rows as any[]).map((r) => ({
+          id: r.id,
+          courtId: r.courtId || r.court_id,
+          date: r.date,
+          startTime: (r.startTime || r.start_time || "").slice(0,5),
+          endTime: (r.endTime || r.end_time || "").slice(0,5),
+          status: r.status,
+          courtNumber: r.courtNumber,
+          courtType: r.courtType,
+          courtName: r.courtName,
+        })).sort((a,b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)));
+      } catch (e: any) {
+        this.bookingsError = e.message || String(e);
+      } finally { this.bookingsLoading = false; }
+    },
+
+    async cancelBooking(id: string) {
+      if (!confirm("Cancel this booking?")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/bookings/${id}/cancel`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Cancel failed: " + await res.text()); return; }
+      await this.loadBookings();
+      await this.loadAvailability();
     },
 
     logout() {

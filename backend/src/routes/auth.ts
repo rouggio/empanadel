@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { registerSchema, loginSchema } from "../types/schemas.js";
-import * as argon2 from "argon2";
+import bcrypt from "bcryptjs";
 import { users } from "../db/schema.js";
 import { eq, or } from "drizzle-orm";
 
@@ -9,7 +9,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const parsed = registerSchema.safeParse((req as any).body);
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
     const { password, ...data } = parsed.data as any;
-    const passwordHash = await argon2.hash(password);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const db: any = (fastify as any).db;
     if (!db) {
@@ -71,7 +71,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       user = r2[0];
     }
     if (!user) return reply.status(401).send({ error: "Invalid credentials" });
-    const ok = await argon2.verify(user.passwordHash, password);
+    const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return reply.status(401).send({ error: "Invalid credentials" });
 
     const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createDb } from "./connection.js";
 import { courts, timetables, users, appSettings } from "./schema.js";
-import * as argon2 from "argon2";
+import bcrypt from "bcryptjs";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -46,7 +46,7 @@ for (const court of allCourts) {
 }
 
 // Admin user (admin / admin123!)
-const adminHash = await argon2.hash("admin123!");
+const adminHash = await bcrypt.hash("admin123!", 10);
 await db
   .insert(users)
   .values({

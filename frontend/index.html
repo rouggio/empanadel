@@ -70,11 +70,10 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-xl font-bold" x-text="t('courts.title')"></h2>
             <div class="flex gap-2">
-              <select x-model="filterType" class="rounded-lg border px-3 py-2 text-sm">
+              <select x-model="filterType" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm">
                 <option value="" x-text="t('filter.all')"></option><option value="tennis">Tennis</option><option value="padel">Padel</option>
               </select>
-              <input type="date" x-model="selectedDate" class="rounded-lg border px-3 py-2 text-sm" />
-              <button @click="loadAvailability()" class="rounded-lg bg-black px-4 py-2 text-sm text-white" x-text="t('btn.refresh')"></button>
+              <input type="date" x-model="selectedDate" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm" />
             </div>
           </div>
           <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">

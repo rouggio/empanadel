@@ -87,7 +87,7 @@
  </div>
  <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">
  <div class="text-sm">
- <div class="font-semibold" x-text="`${timetableAdminSelected?.status==='pending_approval' ? 'Pending' : 'Booked'}: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
+ <div class="font-semibold" x-text="`${timetableAdminSelected?.status==='pending_approval' ? 'Pending' : 'Booked'}: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.name || (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : '' ) || timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
  <div class="text-xs text-zinc-600" x-text="t('status.'+timetableAdminSelected?.status)"></div>
  </div>
  <div class="flex gap-2">
@@ -100,7 +100,7 @@
  <template x-for="court in filteredCourts()" :key="court.id">
  <div class="rounded-xl border bg-white p-4">
  <div class="flex items-center justify-between">
- <div><div class="font-semibold" x-text="`Court ${court.number} · ${court.type}`"></div><div class="text-xs text-zinc-500" x-text="court.name || court.surface || ''"></div></div>
+ <div><div class="font-semibold" x-text="`${court.name || `Court ${court.number}`} · ${court.type}`"></div><div class="text-xs text-zinc-500" x-text="court.name ? `#${court.number} · ${court.surface || court.type}` : (court.surface || '')"></div></div>
  <span class="rounded-lg px-2 py-1 text-xs" :class="court.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'"> <span x-text="court.is_active ? t('court.active') : t('court.inactive')"></span></span>
  </div>
  <div class="mt-3 grid grid-cols-4 gap-2">
@@ -214,7 +214,7 @@
  <div>
  <div class="font-semibold" x-text="courtLabel(b)"></div>
  <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
- <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' racquet(s) rented' : 'No racquet rental'}`"></div>
+  <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()}`"></div>
  <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
  <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
  </div>
@@ -320,9 +320,8 @@
  <template x-for="c in adminCourts" :key="c.id">
  <div class="flex items-center justify-between rounded border px-3 py-2 text-sm">
  <div>
- <span class="font-medium" x-text="`#${c.number} · ${c.type}`"></span>
- <span class="text-zinc-500" x-text="c.name ? ' · '+c.name : ''"></span>
- <span class="text-zinc-500" x-text="c.surface ? ' ('+c.surface+')' : ''"></span>
+  <span class="font-medium" x-text="c.name || `#${c.number}`"></span>
+  <span class="text-zinc-500" x-text="` · ${c.type}` + (c.name ? ` · #${c.number}` : '') + (c.surface ? ` (${c.surface})` : '')"></span>
  <span class="ml-2 rounded px-1 text-xs" :class="c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-200'" x-text="c.is_active ? t('court.active') : t('court.inactive')"></span>
  </div>
  <div class="flex gap-1">
@@ -478,7 +477,7 @@
   <div class="grid gap-2 md:grid-cols-5 mb-3">
   <select x-model="adminLessonForm.courtId" class="rounded border px-2 py-1 text-sm">
   <option value="" x-text="t('admin.lessons.allCourts')"></option>
-  <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`#${c.number} ${c.type}`"></option></template>
+  <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`${c.name || `#${c.number}`} · ${c.type}`"></option></template>
   </select>
   <select x-model.number="adminLessonForm.dayOfWeek" class="rounded border px-2 py-1 text-sm">
   <option value="1" x-text="t('weekday.mon')"></option><option value="2" x-text="t('weekday.tue')"></option><option value="3" x-text="t('weekday.wed')"></option><option value="4" x-text="t('weekday.thu')"></option><option value="5" x-text="t('weekday.fri')"></option><option value="6" x-text="t('weekday.sat')"></option><option value="0" x-text="t('weekday.sun')"></option>
@@ -502,7 +501,7 @@
  <div>
  <span class="font-medium" x-text="l.reason"></span>
  <span class="text-zinc-500" x-text="` · ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][l.dayOfWeek]} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
- <span class="text-zinc-500" x-text="l.courtId ? ' · Court ' + (adminCourts.find(c=>c.id===l.courtId)?.number || l.courtId.slice(0,4)) : ' · All courts'"></span>
+ <span class="text-zinc-500" x-text="l.courtId ? ' · ' + (adminCourts.find(c=>c.id===l.courtId)?.name || (adminCourts.find(c=>c.id===l.courtId)?.number ? 'Court ' + adminCourts.find(c=>c.id===l.courtId).number : l.courtId.slice(0,4))) : ' · All courts'"></span>
  </div>
   <div class="flex gap-1">
   <button @click="startEditLesson(l)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>

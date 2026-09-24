@@ -172,7 +172,7 @@ function app() {
         return;
       }
       const defaultPlayers = court.type === "padel" ? "double" as const : "single" as const;
-      this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `Court ${court.number} · ${court.type}`, courtType: court.type };
+      this.pendingIntent = { courtId: court.id, date: this.selectedDate, startTime: slot.start, courtLabel: `${court.name || `Court ${court.number}`} · ${court.type}`, courtType: court.type };
       this.confirmNotes = "";
       this.confirmRent = 0;
       this.confirmPlayers = defaultPlayers;
@@ -386,9 +386,9 @@ function app() {
     },
 
     courtLabel(b: any): string {
-      if (b.courtName) return `${b.courtName} (#${b.courtNumber})`;
+      if (b.courtName) return `${b.courtName} · ${b.courtType || ""}`.trim();
       const c = this.courts.find((x) => x.id === (b.courtId || b.court_id));
-      if (c) return `Court ${c.number} · ${c.type}${c.name ? " · "+c.name : ""}`;
+      if (c) return `${c.name || `Court ${c.number}`} · ${c.type}`;
       return (b.courtId || b.court_id || "").slice(0,8);
     },
 

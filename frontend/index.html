@@ -101,8 +101,9 @@
                       @click="selectSlot(court, slot)"
                       :disabled="slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked'))"
                       class="rounded-lg border px-2 py-2 text-xs font-medium"
-                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-zinc-100 text-zinc-400'"
-                      x-text="`${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
+                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : slot.status==='lesson' ? 'bg-amber-900 text-white border-amber-800 cursor-not-allowed' : 'bg-zinc-100 text-zinc-400'"
+                      :title="slot.label || ''"
+                      x-text="slot.status==='lesson' ? (slot.label || t('status.blocked')) : `${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
                     ></button>
                   </template>
                 </div>
@@ -358,9 +359,45 @@
               </template>
             </div>
           </div>
+          <div class="rounded-xl border bg-white p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="font-semibold">Scheduled lessons — recurring blocks</div>
+              <span x-show="adminLessonsLoading" class="text-xs text-zinc-500">Loading…</span>
+            </div>
+            <div x-show="adminLessonError" class="text-xs text-red-600 mb-2" x-text="adminLessonError"></div>
+            <div class="grid gap-2 md:grid-cols-5 mb-3">
+              <select x-model="adminLessonForm.courtId" class="rounded border px-2 py-1 text-sm">
+                <option value="">All courts</option>
+                <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`#${c.number} ${c.type}`"></option></template>
+              </select>
+              <select x-model.number="adminLessonForm.dayOfWeek" class="rounded border px-2 py-1 text-sm">
+                <option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option><option value="0">Sun</option>
+              </select>
+              <input type="time" x-model="adminLessonForm.startTime" class="rounded border px-2 py-1 text-sm" />
+              <input type="time" x-model="adminLessonForm.endTime" class="rounded border px-2 py-1 text-sm" />
+              <input x-model="adminLessonForm.reason" placeholder="Label e.g. Kids lessons" class="rounded border px-2 py-1 text-sm" />
+            </div>
+            <button @click="createLesson()" class="rounded bg-amber-700 px-4 py-2 text-xs text-white">Add recurring block</button>
+            <div class="mt-3 space-y-2">
+              <template x-for="l in adminLessons" :key="l.id">
+                <div class="flex items-center justify-between rounded border px-3 py-2 text-sm" :class="l.isActive ? 'bg-amber-50 border-amber-200' : 'bg-zinc-100 opacity-60'">
+                  <div>
+                    <span class="font-medium" x-text="l.reason"></span>
+                    <span class="text-zinc-500" x-text="` · ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][l.dayOfWeek]} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
+                    <span class="text-zinc-500" x-text="l.courtId ? ' · Court ' + (adminCourts.find(c=>c.id===l.courtId)?.number || l.courtId.slice(0,4)) : ' · All courts'"></span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button @click="toggleLesson(l.id, l.isActive)" class="rounded border px-2 py-1 text-xs" x-text="l.isActive ? 'Disable' : 'Enable'"></button>
+                    <button @click="deleteLesson(l.id)" class="rounded border px-2 py-1 text-xs text-red-600">Delete</button>
+                  </div>
+                </div>
+              </template>
+              <p x-show="!adminLessonsLoading && adminLessons.length===0" class="text-xs text-zinc-500 text-center">No recurring lessons</p>
+            </div>
+          </div>
           <div class="grid gap-4 md:grid-cols-2 pt-4 border-t">
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.timetable')"></div><div class="text-sm text-zinc-600">PUT /api/timetable · 30/60/90/120</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc + recurring</div></div>
+            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc blocks via POST /api/blocks</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.settings')"></div><div class="text-sm" x-text="t('admin.settings.desc')"></div></div>
           </div>
         </section>

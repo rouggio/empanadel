@@ -105,11 +105,11 @@ function app() {
         this.view = location.hash.replace("#", "") || "home";
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
-        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); }
+        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); this.loadAdminLessons(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
-      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); }
+      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); this.loadAdminLessons(); }
     },
 
     filteredCourts() {
@@ -466,6 +466,50 @@ function app() {
       const res = await fetch(`/api/courts/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
       await this.loadAdminCourts(); await this.loadCourts();
+    },
+
+    // Recurring lessons (blockingRules)
+    adminLessons: [] as Array<{ id: string; courtId: string | null; dayOfWeek: number; startTime: string; endTime: string; reason: string; isActive: boolean }>,
+    adminLessonsLoading: false as boolean,
+    adminLessonError: "" as string,
+    adminLessonForm: { courtId: "" as string, dayOfWeek: 1 as number, startTime: "15:00", endTime: "17:00", reason: "" } as { courtId: string; dayOfWeek: number; startTime: string; endTime: string; reason: string },
+
+    async loadAdminLessons() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminLessonsLoading = true; this.adminLessonError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/blocking-rules", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminLessons = await res.json();
+      } catch (e: any) { this.adminLessonError = e.message || String(e); }
+      finally { this.adminLessonsLoading = false; }
+    },
+
+    async createLesson() {
+      if (!this.adminLessonForm.reason || !this.adminLessonForm.startTime || !this.adminLessonForm.endTime) { this.adminLessonError = "Reason and times required"; return; }
+      const token = localStorage.getItem("token");
+      const payload: any = { day_of_week: this.adminLessonForm.dayOfWeek, start_time: this.adminLessonForm.startTime, end_time: this.adminLessonForm.endTime, reason: this.adminLessonForm.reason };
+      if (this.adminLessonForm.courtId) payload.court_id = this.adminLessonForm.courtId;
+      const res = await fetch("/api/blocking-rules", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.adminLessonError = await res.text(); return; }
+      this.adminLessonForm.reason = "";
+      await this.loadAdminLessons(); await this.loadAvailability();
+    },
+
+    async deleteLesson(id: string) {
+      if (!confirm("Delete this recurring block?")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/blocking-rules/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
+      await this.loadAdminLessons(); await this.loadAvailability();
+    },
+
+    async toggleLesson(id: string, current: boolean) {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/blocking-rules/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ is_active: !current }) });
+      if (!res.ok) { alert("Toggle failed: " + await res.text()); return; }
+      await this.loadAdminLessons(); await this.loadAvailability();
     },
 
     async loadProfile() {

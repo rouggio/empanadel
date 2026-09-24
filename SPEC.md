@@ -74,6 +74,7 @@ Auth: **JWT** (short-lived access 15m + refresh 7d, stored in httpOnly cookie or
 - `first_name`, `last_name` VARCHAR
 - `role` ENUM: `visitor`, `associate`, `admin`
 - `preferred_language` ENUM: `it`, `en`, `fr`, `de`, `es` — default `it`, persisted per user
+- `preferred_sport` ENUM: `tennis`, `padel` nullable — preferred sport, presets timetable filter (not mandatory)
 - `mobile` VARCHAR(20) nullable — mobile number
 - `gender` ENUM: `male`, `female`, `other`, `prefer_not_to_say` nullable
 - `birthdate` DATE nullable

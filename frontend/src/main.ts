@@ -42,7 +42,7 @@ function app() {
     adminCourtSuccess: "" as string,
     adminCourtForm: { number: null as number | null, type: "tennis" as "tennis" | "padel", name: "", surface: "" } as { number: number | null; type: "tennis" | "padel"; name: string; surface: string },
     editingCourtId: null as string | null,
-    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
@@ -95,6 +95,12 @@ function app() {
               this.lang = me.preferred_language;
               setLang(this.lang);
               localStorage.setItem("lang", this.lang);
+            }
+            // Preset timetable filter from preferred sport (not mandatory)
+            if (me.preferred_sport && ["tennis","padel"].includes(me.preferred_sport)) {
+              this.filterType = me.preferred_sport;
+              // reload availability with preset filter
+              this.loadAvailability();
             }
           }
         } catch {}
@@ -529,6 +535,7 @@ function app() {
           gender: me.gender || "",
           birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
           preferred_language: me.preferred_language || me.preferredLanguage || this.lang,
+          preferred_sport: me.preferred_sport || me.preferredSport || "",
         };
         this.user = me;
       } catch (e: any) { this.profileError = e.message || String(e); }
@@ -547,11 +554,16 @@ function app() {
       if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
       if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
       if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;
+      if (this.profileForm.preferred_sport !== undefined) payload.preferred_sport = this.profileForm.preferred_sport || null;
       const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
       if (!res.ok) { this.profileError = await res.text(); return; }
       const updated = await res.json();
       this.profileSuccess = "Profile updated";
       if (updated.preferred_language) { this.lang = updated.preferred_language; setLang(this.lang); localStorage.setItem("lang", this.lang); }
+      if (updated.preferred_sport !== undefined) {
+        this.filterType = updated.preferred_sport || "";
+        if (this.view === "courts") this.loadAvailability();
+      }
       this.user = { ...this.user, ...updated };
     },
 

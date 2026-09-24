@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name", { length: 100 }).notNull(),
   role: userRoleEnum("role").notNull().default("visitor"),
   preferredLanguage: preferredLanguageEnum("preferred_language").notNull().default("it"),
+  preferredSport: courtTypeEnum("preferred_sport"),
   mobile: varchar("mobile", { length: 20 }),
   gender: genderEnum("gender"),
   birthdate: date("birthdate"),

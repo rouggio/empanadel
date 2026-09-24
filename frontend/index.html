@@ -257,6 +257,11 @@
               <option value="prefer_not_to_say">Prefer not to say</option>
             </select>
             <input x-model="profileForm.birthdate" type="date" class="w-full rounded-lg border px-3 py-2 text-sm" />
+            <select x-model="profileForm.preferred_sport" class="w-full rounded-lg border px-3 py-2 text-sm">
+              <option value="">— preferred sport —</option>
+              <option value="tennis">Tennis</option>
+              <option value="padel">Padel</option>
+            </select>
             <div class="relative">
               <button @click="profileLangOpen=!profileLangOpen" type="button" class="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm bg-white">
                 <img :src="flagUrl(profileForm.preferred_language)" class="h-3 w-4 object-cover rounded-sm" :alt="profileForm.preferred_language" />

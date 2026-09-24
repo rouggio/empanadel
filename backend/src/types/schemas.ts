@@ -66,6 +66,7 @@ export const profileSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
   email: z.string().email().optional(),
   preferred_language: preferredLanguageSchema.optional(),
+  preferred_sport: z.enum(["tennis", "padel"]).optional().nullable(),
   mobile: z.string().max(20).optional().nullable(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional().nullable(),
   birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),

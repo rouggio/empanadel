@@ -36,6 +36,12 @@ function app() {
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    adminCourts: [] as Court[],
+    adminCourtsLoading: false as boolean,
+    adminCourtError: "" as string,
+    adminCourtSuccess: "" as string,
+    adminCourtForm: { number: null as number | null, type: "tennis" as "tennis" | "padel", name: "", surface: "" } as { number: number | null; type: "tennis" | "padel"; name: string; surface: string },
+    editingCourtId: null as string | null,
     profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang },
     profileLoading: false as boolean,
     profileError: "" as string,
@@ -99,11 +105,11 @@ function app() {
         this.view = location.hash.replace("#", "") || "home";
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
-        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
-      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); }
     },
 
     filteredCourts() {
@@ -246,7 +252,7 @@ function app() {
       if (this.user?.role === "admin") {
         this.view = "courts";
         location.hash = "courts";
-        this.loadAdminBookings(); this.loadAdminSettings();
+        this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts();
       } else {
         this.view = "me";
         location.hash = "me";
@@ -288,7 +294,7 @@ function app() {
       }
       await this.loadBookings();
       if (this.user?.role === "admin") {
-        await this.loadAdminBookings(); await this.loadAdminSettings();
+        await this.loadAdminBookings(); await this.loadAdminSettings(); await this.loadAdminCourts();
         this.view = "courts";
         location.hash = "courts";
       } else {
@@ -411,6 +417,55 @@ function app() {
       const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ auto_approve_bookings: next }) });
       if (!res.ok) { alert("Settings failed: " + await res.text()); return; }
       this.adminSettings.auto_approve_bookings = next;
+    },
+
+    async loadAdminCourts() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminCourtsLoading = true; this.adminCourtError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/courts", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminCourts = await res.json();
+      } catch (e: any) { this.adminCourtError = e.message || String(e); }
+      finally { this.adminCourtsLoading = false; }
+    },
+
+    async createCourt() {
+      this.adminCourtError = ""; this.adminCourtSuccess = "";
+      if (!this.adminCourtForm.number || !this.adminCourtForm.type) { this.adminCourtError = "Number and type required"; return; }
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/courts", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ number: this.adminCourtForm.number, type: this.adminCourtForm.type, name: this.adminCourtForm.name || null, surface: this.adminCourtForm.surface || null }) });
+      if (!res.ok) { this.adminCourtError = await res.text(); return; }
+      this.adminCourtSuccess = "Court created";
+      this.adminCourtForm = { number: null, type: "tennis", name: "", surface: "" };
+      await this.loadAdminCourts(); await this.loadCourts();
+    },
+
+    startEditCourt(c: Court) {
+      this.editingCourtId = c.id;
+      this.adminCourtForm = { number: c.number, type: c.type as any, name: c.name || "", surface: c.surface || "" };
+    },
+
+    cancelEditCourt() { this.editingCourtId = null; this.adminCourtForm = { number: null, type: "tennis", name: "", surface: "" }; this.adminCourtError = ""; },
+
+    async updateCourt() {
+      if (!this.editingCourtId) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/courts/${this.editingCourtId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ number: this.adminCourtForm.number, type: this.adminCourtForm.type, name: this.adminCourtForm.name || null, surface: this.adminCourtForm.surface || null }) });
+      if (!res.ok) { this.adminCourtError = await res.text(); return; }
+      this.adminCourtSuccess = "Court updated";
+      this.editingCourtId = null;
+      this.adminCourtForm = { number: null, type: "tennis", name: "", surface: "" };
+      await this.loadAdminCourts(); await this.loadCourts();
+    },
+
+    async deleteCourt(id: string) {
+      if (!confirm("Disable this court? It will be hidden from booking but keep history.")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/courts/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
+      await this.loadAdminCourts(); await this.loadCourts();
     },
 
     async loadProfile() {

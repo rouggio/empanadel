@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch --clear-screen=false src/app.ts",
+    "dev:once": "tsx src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "migrate": "tsx src/db/migrate.ts",

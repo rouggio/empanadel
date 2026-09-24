@@ -319,8 +319,46 @@
               </div>
             </template>
           </div>
+          <div class="rounded-xl border bg-white p-4 md:col-span-2">
+            <div class="flex items-center justify-between mb-3">
+              <div class="font-semibold" x-text="t('admin.courts')"></div>
+              <span x-show="adminCourtsLoading" class="text-xs text-zinc-500">Loading…</span>
+            </div>
+            <div x-show="adminCourtError" class="text-xs text-red-600 mb-2" x-text="adminCourtError"></div>
+            <div x-show="adminCourtSuccess" class="text-xs text-emerald-600 mb-2" x-text="adminCourtSuccess"></div>
+            <div class="grid gap-2 md:grid-cols-4 mb-3">
+              <input type="number" x-model.number="adminCourtForm.number" placeholder="Number" class="rounded border px-2 py-1 text-sm" />
+              <select x-model="adminCourtForm.type" class="rounded border px-2 py-1 text-sm"><option value="tennis">Tennis</option><option value="padel">Padel</option></select>
+              <input x-model="adminCourtForm.name" placeholder="Name (optional)" class="rounded border px-2 py-1 text-sm" />
+              <input x-model="adminCourtForm.surface" placeholder="Surface" class="rounded border px-2 py-1 text-sm" />
+            </div>
+            <div class="flex gap-2 mb-4">
+              <button x-show="!editingCourtId" @click="createCourt()" class="rounded bg-black px-4 py-2 text-xs text-white">Create</button>
+              <template x-if="editingCourtId">
+                <div class="flex gap-2">
+                  <button @click="updateCourt()" class="rounded bg-emerald-600 px-4 py-2 text-xs text-white">Update</button>
+                  <button @click="cancelEditCourt()" class="rounded border px-4 py-2 text-xs">Cancel</button>
+                </div>
+              </template>
+            </div>
+            <div class="space-y-2">
+              <template x-for="c in adminCourts" :key="c.id">
+                <div class="flex items-center justify-between rounded border px-3 py-2 text-sm">
+                  <div>
+                    <span class="font-medium" x-text="`#${c.number} · ${c.type}`"></span>
+                    <span class="text-zinc-500" x-text="c.name ? ' · '+c.name : ''"></span>
+                    <span class="text-zinc-500" x-text="c.surface ? ' ('+c.surface+')' : ''"></span>
+                    <span class="ml-2 rounded px-1 text-xs" :class="c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-200'" x-text="c.is_active ? 'active' : 'disabled'"></span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button @click="startEditCourt(c)" class="rounded border px-2 py-1 text-xs">Edit</button>
+                    <button @click="deleteCourt(c.id)" class="rounded border px-2 py-1 text-xs text-red-600">Disable</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
           <div class="grid gap-4 md:grid-cols-2 pt-4 border-t">
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.courts')"></div><div class="text-sm text-zinc-600">CRUD at /api/courts</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.timetable')"></div><div class="text-sm text-zinc-600">PUT /api/timetable · 30/60/90/120</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc + recurring</div></div>
             <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.settings')"></div><div class="text-sm" x-text="t('admin.settings.desc')"></div></div>

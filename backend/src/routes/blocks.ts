@@ -48,6 +48,7 @@ export default async function blockRoutes(fastify: FastifyInstance) {
     const { id } = req.params as any;
     const body = (req as any).body as any;
     const updates: any = {};
+    if (body.court_id !== undefined) updates.courtId = body.court_id || null;
     if (body.day_of_week !== undefined) updates.dayOfWeek = body.day_of_week;
     if (body.start_time !== undefined) updates.startTime = body.start_time;
     if (body.end_time !== undefined) updates.endTime = body.end_time;

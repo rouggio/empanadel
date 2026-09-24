@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { splitIntoSlots, overlaps } from "../services/availability.js";
-import { timetables, bookings, blocks, blockingRules, appSettings } from "../db/schema.js";
+import { timetables, bookings, blocks, blockingRules, appSettings, users } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 export default async function availabilityRoutes(fastify: FastifyInstance) {
@@ -38,6 +38,12 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
     // Bookings for that court+date (active holds)
     const bookingRows = await db.select().from(bookings).where(and(eq(bookings.courtId, court_id), eq(bookings.date, date)));
     const activeBookings = bookingRows.filter((b: any) => ["pending_registration", "pending_approval", "approved"].includes(b.status) && !(b.status === "pending_registration" && b.expiresAt && new Date(b.expiresAt) < new Date()));
+    // Username map for admin display [username]
+    let usernameById: Record<string, string> = {};
+    try {
+      const userRows = await db.select().from(users);
+      for (const u of userRows as any[]) usernameById[String(u.id)] = u.username;
+    } catch {}
 
     // Ad-hoc blocks
     const dayStart = new Date(date + "T00:00:00Z");
@@ -70,8 +76,9 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
         const bs = b.startTime.slice(0, 5);
         const be = b.endTime.slice(0, 5);
         if (overlaps(slotRange, { start: bs, end: be })) {
-          if (b.status === "pending_approval") return { ...slot, status: "pending_approval" as const, bookingId: b.id, bookingNotes: b.notes, bookingUserId: b.userId };
-          return { ...slot, status: "booked" as const, bookingId: b.id };
+          const uname = usernameById[String(b.userId)] || null;
+          if (b.status === "pending_approval") return { ...slot, status: "pending_approval" as const, bookingId: b.id, bookingNotes: b.notes, bookingUserId: b.userId, bookingUsername: uname };
+          return { ...slot, status: "booked" as const, bookingId: b.id, bookingUserId: b.userId, bookingUsername: uname };
         }
       }
       return { ...slot, status: "available" as const, bookingId: null };

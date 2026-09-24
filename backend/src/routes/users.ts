@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { profileSchema } from "../types/schemas.js";
+import { profileSchema, registerSchema } from "../types/schemas.js";
+import bcrypt from "bcryptjs";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get("/api/users/me", { preHandler: [fastify.authenticate] }, async (req, _reply) => {
@@ -46,18 +47,113 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get("/api/users", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
     const db: any = (req as any).server.db;
     if (!db) return reply.send([]);
-    const rows = await db.select().from(users);
+    const { q, role, search } = (req.query as any) || {};
+    const term = (q || search || "").toLowerCase();
+    let rows = await db.select().from(users);
+    if (term) {
+      rows = rows.filter((r: any) => [r.username, r.email, r.firstName, r.lastName, r.mobile].some((v: any) => v && String(v).toLowerCase().includes(term)));
+    }
+    if (role && ["visitor","associate","admin"].includes(role)) {
+      rows = rows.filter((r: any) => r.role === role);
+    }
     return reply.send(rows.map((r: any) => ({ id: r.id, username: r.username, email: r.email, role: r.role, preferred_language: r.preferredLanguage, preferred_sport: r.preferredSport, first_name: r.firstName, last_name: r.lastName, mobile: r.mobile, gender: r.gender, birthdate: r.birthdate })));
   });
 
   fastify.patch("/api/users/:id/role", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
-    const db: any = (req as any).server.db;
+    const db: any = (fastify as any).server.db ?? (fastify as any).db;
     if (!db) return reply.status(501).send({ error: "DB not configured" });
     const { id } = req.params as any;
     const { role } = (req as any).body as any;
     if (!["visitor", "associate", "admin"].includes(role)) return reply.status(400).send({ error: "Invalid role" });
+    // Prevent demoting the last admin
+    if (role !== "admin") {
+      const targetRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const target = targetRows[0];
+      if (target?.role === "admin") {
+        const admins = await db.select().from(users).where(eq(users.role, "admin"));
+        if (admins.length <= 1) return reply.status(400).send({ error: "Cannot demote the last admin" });
+      }
+    }
     const [row] = await db.update(users).set({ role }).where(eq(users.id, id)).returning();
     if (!row) return reply.status(404).send({ error: "Not found" });
     return reply.send({ id: row.id, role: row.role });
+  });
+
+  fastify.post("/api/users", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
+    const parsed = registerSchema.safeParse((req as any).body);
+    if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
+    const db: any = (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const { password, ...data } = parsed.data as any;
+    const role = (req.body as any).role && ["visitor","associate","admin"].includes((req.body as any).role) ? (req.body as any).role : "visitor";
+    const passwordHash = await bcrypt.hash(password, 10);
+    try {
+      const [user] = await db.insert(users).values({ username: data.username, email: data.email, passwordHash, firstName: data.first_name, lastName: data.last_name, role, preferredLanguage: data.preferred_language ?? "it" }).returning();
+      return reply.status(201).send({ id: user.id, username: user.username, email: user.email, role: user.role });
+    } catch (e: any) {
+      if (String(e.code) === "23505") return reply.status(409).send({ error: "username or email already taken" });
+      throw e;
+    }
+  });
+
+  fastify.patch("/api/users/:id", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
+    const db: any = (fastify as any).server.db ?? (fastify as any).db ?? (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const { id } = req.params as any;
+    const parsed = profileSchema.safeParse((req as any).body);
+    if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
+    const body = parsed.data as any;
+    // allow role via same endpoint
+    const role = (req.body as any).role;
+    // Prevent demoting the last admin via this endpoint
+    if (role && role !== "admin") {
+      const targetRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      const target = targetRows[0];
+      if (target?.role === "admin") {
+        const admins = await db.select().from(users).where(eq(users.role, "admin"));
+        if (admins.length <= 1) return reply.status(400).send({ error: "Cannot demote the last admin" });
+      }
+    }
+    const updates: any = {};
+    if (body.username) updates.username = body.username;
+    if (body.first_name) updates.firstName = body.first_name;
+    if (body.last_name) updates.lastName = body.last_name;
+    if (body.email) updates.email = body.email.toLowerCase();
+    if (body.preferred_language) updates.preferredLanguage = body.preferred_language;
+    if (body.preferred_sport !== undefined) updates.preferredSport = body.preferred_sport || null;
+    if (body.mobile !== undefined) updates.mobile = body.mobile || null;
+    if (body.gender !== undefined) updates.gender = body.gender;
+    if (body.birthdate !== undefined) updates.birthdate = body.birthdate || null;
+    if (role && ["visitor","associate","admin"].includes(role)) updates.role = role;
+    if ((req.body as any).password) updates.passwordHash = await bcrypt.hash((req.body as any).password, 10);
+    if (Object.keys(updates).length === 0) return reply.status(400).send({ error: "No fields to update" });
+    updates.updatedAt = new Date();
+    try {
+      const [row] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+      if (!row) return reply.status(404).send({ error: "Not found" });
+      return reply.send({ id: row.id, username: row.username, email: row.email, role: row.role });
+    } catch (e: any) {
+      if (String(e.code) === "23505") return reply.status(409).send({ error: "username or email already taken" });
+      throw e;
+    }
+  });
+
+  fastify.delete("/api/users/:id", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
+    const db: any = (fastify as any).server.db ?? (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const { id } = req.params as any;
+    const user = (req as any).user;
+    if (String(id) === String(user.id)) return reply.status(400).send({ error: "Cannot delete yourself" });
+    // Prevent deleting the last admin
+    const targetRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const target = targetRows[0];
+    if (!target) return reply.status(404).send({ error: "Not found" });
+    if (target.role === "admin") {
+      const admins = await db.select().from(users).where(eq(users.role, "admin"));
+      if (admins.length <= 1) return reply.status(400).send({ error: "Cannot delete the last admin" });
+    }
+    const [row] = await db.delete(users).where(eq(users.id, id)).returning();
+    if (!row) return reply.status(404).send({ error: "Not found" });
+    return reply.status(204).send();
   });
 }

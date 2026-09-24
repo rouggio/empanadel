@@ -1,414 +1,524 @@
 <!doctype html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Empanadel — Tennis & Padel Booking</title>
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
-    <div x-data="app()" x-init="init()" class="flex min-h-screen flex-col">
-      <header class="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <a href="#" class="text-lg font-bold tracking-tight" x-text="t('app.name')">Empanadel</a>
-          <nav class="hidden gap-6 text-sm md:flex">
-            <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
-            <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>
-            <a href="#admin" class="hover:text-black" x-show="user?.role==='admin'" x-text="t('nav.admin')"></a>
-          </nav>
-          <div class="flex items-center gap-2">
-            <template x-if="!user">
-              <div class="flex items-center gap-2 relative">
-                <label class="hidden text-xs text-zinc-500 md:block" x-text="t('lang.label')"></label>
-                <button @click="headerLangOpen=!headerLangOpen" class="flex items-center gap-2 rounded-full border bg-white px-2 py-1 text-xs">
-                  <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />
-                  <span x-text="t('lang.'+lang)"></span>
-                </button>
-                <div x-show="headerLangOpen" @click.outside="headerLangOpen=false" class="absolute right-0 top-8 mt-1 w-44 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
-                  <template x-for="l in ['it','en','fr','de','es']" :key="l">
-                    <button @click="setLang(l); headerLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
-                      <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
-                      <span x-text="t('lang.'+l)"></span>
-                    </button>
-                  </template>
-                </div>
-              </div>
-            </template>
-            <a href="#profile" x-show="user" class="hidden text-sm font-medium text-zinc-700 hover:text-black md:inline" x-text="user?.username" @click.prevent="view='profile'; location.hash='profile'; loadProfile()"></a>
-            <button x-show="!user" @click="view='login'" class="rounded-full bg-black px-4 py-2 text-sm font-medium text-white" x-text="t('nav.login')"></button>
-            <button x-show="user" @click="logout()" class="rounded-full border px-4 py-2 text-sm" x-text="t('nav.logout')"></button>
-          </div>
-        </div>
-      </header>
+ <head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Empanadel — Tennis & Padel Booking</title>
+ <link rel="stylesheet" href="/src/styles.css" />
+ </head>
+ <body class="site-page min-h-screen antialiased">
+ <div x-data="app()" x-init="init()" class="flex min-h-screen flex-col">
+ <header class="site-header sticky top-0 z-30 backdrop-blur">
+ <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+ <a href="#" class="text-lg font-bold tracking-tight" x-text="t('app.name')">Empanadel</a>
+ <nav class="hidden gap-6 text-sm md:flex">
+ <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
+ <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>
+ <template x-if="user?.role==='admin'">
+ <div class="flex gap-6">
+ <a href="#admin-courts" class="hover:text-black" x-text="t('admin.courts.manage')"></a>
+ <a href="#admin-users" class="hover:text-black" x-text="t('admin.users')"></a>
+ <a href="#admin-bookings" class="hover:text-black" x-text="t('admin.bookings')"></a>
+ <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
+ </div>
+ </template>
+ </nav>
+ <div class="flex items-center gap-2">
+ <template x-if="!user">
+ <div class="flex items-center gap-2 relative">
+ <button @click="headerLangOpen=!headerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium">
+ <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />
+ <span x-text="t('lang.'+lang)"></span>
+ </button>
+ <div x-show="headerLangOpen" @click.outside="headerLangOpen=false" class="absolute right-0 top-10 mt-1 w-44 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
+ <template x-for="l in ['it','en','fr','de','es']" :key="l">
+ <button @click="setLang(l); headerLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
+ <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
+ <span x-text="t('lang.'+l)"></span>
+ </button>
+ </template>
+ </div>
+ </div>
+ </template>
+ <a href="#profile" x-show="user" class="hidden text-sm font-medium text-zinc-700 hover:text-black md:inline" x-text="user?.username" @click.prevent="view='profile'; location.hash='profile'; loadProfile()"></a>
+ <button x-show="!user" @click="view='login'" class="rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-4 py-2 text-sm font-medium" x-text="t('nav.login')"></button>
+ <button x-show="user" @click="logout()" class="rounded-lg border px-4 py-2 text-sm" x-text="t('nav.logout')"></button>
+ </div>
+ </div>
+ </header>
 
-      <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden">
-        <a href="#courts" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.courts')"></a>
-        <a href="#me" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.myBookings')"></a>
-        <a href="#profile" x-show="user" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.profile')"></a>
-        <a href="#admin" x-show="user?.role==='admin'" class="flex flex-1 flex-col items-center text-xs" x-text="t('nav.admin')"></a>
-      </nav>
+ <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden overflow-x-auto">
+ <a href="#courts" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.courts')"></a>
+ <a href="#me" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.myBookings')"></a>
+ <a href="#profile" x-show="user" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.profile')"></a>
+ <template x-if="user?.role==='admin'">
+ <div class="flex flex-1 gap-2">
+ <a href="#admin-courts" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.courts.manage')"></a>
+ <a href="#admin-users" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.users')"></a>
+ <a href="#admin-bookings" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.bookings')"></a>
+ <a href="#admin-blocks" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.blocks.short')"></a>
+ </div>
+ </template>
+ </nav>
 
-      <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
-        <section x-show="view==='home'" class="space-y-6">
-          <div class="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-8 text-white">
-            <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
-            <p class="mt-2 max-w-xl text-white/90" x-text="t('hero.subtitle')"></p>
-            <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-full bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
-          </div>
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.tennis')"></div><div class="text-sm text-zinc-600" x-text="t('card.tennis.desc')"></div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.padel')"></div><div class="text-sm text-zinc-600" x-text="t('card.padel.desc')"></div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.lessons')"></div><div class="text-sm text-zinc-600" x-text="t('card.lessons.desc')"></div></div>
-          </div>
-          <div x-show="pendingIntent" class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-            <span x-text="t('hold.expiresIn') + ':'"></span> <span class="font-mono font-bold" x-text="`${pendingIntent?.courtLabel} · ${pendingIntent?.date} ${pendingIntent?.startTime}`"></span> — <span x-text="t('hold.confirm')"></span>
-            <button @click="view='register'" class="ml-2 rounded-full bg-amber-500 px-3 py-1 text-xs text-white" x-text="t('confirm.continue')"></button>
-          </div>
-        </section>
+ <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
+ <section x-show="view==='home'" class="space-y-6">
+ <div class="hero-gradient rounded-2xl p-8">
+ <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
+ <p class="mt-2 max-w-xl/90" x-text="t('hero.subtitle')"></p>
+ <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-lg bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
+ </div>
+  <div class="grid gap-4 md:grid-cols-3">
+  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.tennis')"></div><div class="text-sm text-zinc-600" x-text="t('card.tennis.desc')"></div></div>
+  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.padel')"></div><div class="text-sm text-zinc-600" x-text="t('card.padel.desc')"></div></div>
+  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.lessons')"></div><div class="text-sm text-zinc-600" x-text="t('card.lessons.desc')"></div></div>
+  </div>
+  </section>
 
-        <section x-show="view==='courts'" class="space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-xl font-bold" x-text="t('courts.title')"></h2>
-            <div class="flex gap-2">
-              <select x-model="filterType" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm">
-                <option value="" x-text="t('filter.all')"></option><option value="tennis">Tennis</option><option value="padel">Padel</option>
-              </select>
-              <input type="date" x-model="selectedDate" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm" />
-            </div>
-          </div>
-          <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">
-            <div class="text-sm">
-              <div class="font-semibold" x-text="`${timetableAdminSelected?.status==='pending_approval' ? 'Pending' : 'Booked'}: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
-              <div class="text-xs text-zinc-600" x-text="t('status.'+timetableAdminSelected?.status)"></div>
-            </div>
-            <div class="flex gap-2">
-              <button x-show="timetableAdminSelected?.status==='pending_approval'" @click="timetableApprove()" class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white" x-text="t('btn.approve')"></button>
-              <button @click="timetableReject()" class="rounded-full border bg-white px-4 py-2 text-xs" x-text="t('btn.reject')"></button>
-              <button @click="timetableAdminSelected=null" class="rounded-full border bg-white px-3 py-2 text-xs">×</button>
-            </div>
-          </div>
-          <div class="grid gap-3 md:grid-cols-2">
-            <template x-for="court in filteredCourts()" :key="court.id">
-              <div class="rounded-xl border bg-white p-4">
-                <div class="flex items-center justify-between">
-                  <div><div class="font-semibold" x-text="`Court ${court.number} · ${court.type}`"></div><div class="text-xs text-zinc-500" x-text="court.name || court.surface || ''"></div></div>
-                  <span class="rounded-full px-2 py-1 text-xs" :class="court.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'"> <span x-text="court.is_active ? t('court.active') : t('court.inactive')"></span></span>
-                </div>
-                <div class="mt-3 grid grid-cols-4 gap-2">
-                  <template x-for="slot in availability[court.id] || []" :key="slot.start">
-                    <button
-                      @click="selectSlot(court, slot)"
-                      :disabled="slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked'))"
-                      class="rounded-lg border px-2 py-2 text-xs font-medium"
-                      :class="slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : slot.status==='lesson' ? 'bg-amber-900 text-white border-amber-800 cursor-not-allowed' : 'bg-zinc-100 text-zinc-400'"
-                      :title="slot.label || ''"
-                      x-text="slot.status==='lesson' ? (slot.label || t('status.blocked')) : `${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}`"
-                    ></button>
-                  </template>
-                </div>
-              </div>
-            </template>
-          </div>
-        </section>
+ <section x-show="view==='courts'" class="space-y-4">
+ <div class="flex flex-wrap items-center justify-between gap-2">
+ <h2 class="text-xl font-bold" x-text="t('courts.title')"></h2>
+ <div class="flex gap-2">
+ <select x-model="filterType" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm">
+ <option value="" x-text="t('filter.all')"></option><option value="tennis">Tennis</option><option value="padel">Padel</option>
+ </select>
+ <input type="date" x-model="selectedDate" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm" />
+ </div>
+ </div>
+ <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">
+ <div class="text-sm">
+ <div class="font-semibold" x-text="`${timetableAdminSelected?.status==='pending_approval' ? 'Pending' : 'Booked'}: ${timetableAdminSelected?.courtId ? (courts.find(c=>c.id===timetableAdminSelected.courtId)?.number ? 'Court ' + courts.find(c=>c.id===timetableAdminSelected.courtId).number : timetableAdminSelected.courtId.slice(0,8)) : ''} · ${timetableAdminSelected?.date} ${timetableAdminSelected?.startTime}`"></div>
+ <div class="text-xs text-zinc-600" x-text="t('status.'+timetableAdminSelected?.status)"></div>
+ </div>
+ <div class="flex gap-2">
+ <button x-show="timetableAdminSelected?.status==='pending_approval'" @click="timetableApprove()" class="rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-4 py-2 text-xs font-medium" x-text="t('btn.approve')"></button>
+ <button @click="timetableReject()" class="rounded-lg border bg-white px-4 py-2 text-xs" x-text="t('btn.reject')"></button>
+ <button @click="timetableAdminSelected=null" class="rounded-lg border bg-white px-3 py-2 text-xs">×</button>
+ </div>
+ </div>
+ <div class="grid gap-3 md:grid-cols-2">
+ <template x-for="court in filteredCourts()" :key="court.id">
+ <div class="rounded-xl border bg-white p-4">
+ <div class="flex items-center justify-between">
+ <div><div class="font-semibold" x-text="`Court ${court.number} · ${court.type}`"></div><div class="text-xs text-zinc-500" x-text="court.name || court.surface || ''"></div></div>
+ <span class="rounded-lg px-2 py-1 text-xs" :class="court.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'"> <span x-text="court.is_active ? t('court.active') : t('court.inactive')"></span></span>
+ </div>
+ <div class="mt-3 grid grid-cols-4 gap-2">
+ <template x-for="slot in availability[court.id] || []" :key="slot.start">
+ <button
+ @click="selectSlot(court, slot)"
+ :disabled="slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked'))"
+ class="rounded-lg border px-2 py-2 text-xs font-medium"
+ :class="(slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? ' border-2 !border-red-700 ring-1 ring-red-700 font-bold ' : '') + (slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : slot.status==='lesson' ? 'bg-amber-900 text-white border-amber-800 cursor-not-allowed' : 'bg-zinc-100 text-zinc-400')"
+ :title="slot.label || ''"
+ x-text="(slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? '★ ' : '') + (slot.status==='lesson' ? (slot.label || t('status.blocked')) : `${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}${user?.role==='admin' && slot.bookingUsername ? ' [' + slot.bookingUsername + ']' : ''}`)"
+ ></button>
+ </template>
+ </div>
+ </div>
+ </template>
+ </div>
+ </section>
 
-        <section x-show="view==='confirm'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-          <h2 class="text-lg font-bold" x-text="t('confirm.title')"></h2>
-          <div class="rounded-lg bg-zinc-50 p-4 border text-sm">
-            <div class="font-semibold" x-text="pendingIntent?.courtLabel"></div>
-            <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
-            <div class="text-xs text-zinc-500" x-text="pendingIntent?.courtType ? (pendingIntent.courtType === 'padel' ? 'Padel' : 'Tennis') : ''"></div>
-          </div>
-          <div class="space-y-1">
-            <label class="text-sm font-medium" x-text="t('confirm.notes')"></label>
-            <textarea x-model="confirmNotes" rows="3" maxlength="1000" :placeholder="t('confirm.notes')" class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
-            <div class="text-xs text-zinc-400 text-right" x-text="`${confirmNotes.length}/1000`"></div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <label class="text-sm font-medium" x-text="t('confirm.rent')"></label>
-              <select x-model.number="confirmRent" class="w-full rounded-lg border px-3 py-2 text-sm">
-                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-              </select>
-              <div class="text-xs text-zinc-500">0–4</div>
-            </div>
-            <div class="space-y-1">
-              <label class="text-sm font-medium" x-text="t('confirm.players')"></label>
-              <div class="flex gap-4 pt-2">
-                <label class="flex items-center gap-2 text-sm"><input type="radio" value="single" x-model="confirmPlayers" /> <span x-text="t('confirm.single')"></span></label>
-                <label class="flex items-center gap-2 text-sm"><input type="radio" value="double" x-model="confirmPlayers" /> <span x-text="t('confirm.double')"></span></label>
-              </div>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button @click="cancelConfirm()" class="flex-1 rounded-lg border py-2 text-sm" x-text="t('confirm.cancel')"></button>
-            <button @click="confirmBooking()" class="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white" x-text="user ? t('confirm.confirm') : t('confirm.continue')"></button>
-          </div>
-        </section>
+ <section x-show="view==='confirm'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+ <h2 class="text-lg font-bold" x-text="t('confirm.title')"></h2>
+ <div class="rounded-lg bg-zinc-50 p-4 border text-sm">
+ <div class="font-semibold" x-text="pendingIntent?.courtLabel"></div>
+ <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
+ <div class="text-xs text-zinc-500" x-text="pendingIntent?.courtType ? (pendingIntent.courtType === 'padel' ? 'Padel' : 'Tennis') : ''"></div>
+ </div>
+ <div class="space-y-1">
+ <label class="text-sm font-medium" x-text="t('confirm.notes')"></label>
+ <textarea x-model="confirmNotes" rows="3" maxlength="1000" :placeholder="t('confirm.notes')" class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+ <div class="text-xs text-zinc-400 text-right" x-text="`${confirmNotes.length}/1000`"></div>
+ </div>
+ <div class="grid grid-cols-2 gap-4">
+ <div class="space-y-1">
+ <label class="text-sm font-medium" x-text="t('confirm.rent')"></label>
+ <select x-model.number="confirmRent" class="w-full rounded-lg border px-3 py-2 text-sm">
+ <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+ </select>
+ <div class="text-xs text-zinc-500">0–4</div>
+ </div>
+ <div class="space-y-1">
+ <label class="text-sm font-medium" x-text="t('confirm.players')"></label>
+ <div class="flex gap-4 pt-2">
+ <label class="flex items-center gap-2 text-sm"><input type="radio" value="single" x-model="confirmPlayers" /> <span x-text="t('confirm.single')"></span></label>
+ <label class="flex items-center gap-2 text-sm"><input type="radio" value="double" x-model="confirmPlayers" /> <span x-text="t('confirm.double')"></span></label>
+ </div>
+ </div>
+ </div>
+ <div class="flex gap-2">
+ <button @click="cancelConfirm()" class="flex-1 rounded-lg border py-2 text-sm" x-text="t('confirm.cancel')"></button>
+ <button @click="confirmBooking()" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="user ? t('confirm.confirm') : t('confirm.continue')"></button>
+ </div>
+ </section>
 
-        <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-          <h2 class="text-lg font-bold" x-text="t('auth.login')"></h2>
-          <input x-model="authForm.username" :placeholder="t('auth.usernameOrEmail')" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="authForm.password" type="password" :placeholder="t('auth.password')" class="w-full rounded-lg border px-3 py-2" />
-          <button @click="login()" class="w-full rounded-lg bg-black py-2 text-white" x-text="t('auth.login')"></button>
-          <button @click="view='register'" class="w-full text-sm text-zinc-600" x-text="t('auth.needAccount')"></button>
-          <p x-show="authError" class="text-sm text-red-600" x-text="authError"></p>
-        </section>
+ <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+ <h2 class="text-lg font-bold" x-text="t('auth.login')"></h2>
+ <input x-model="authForm.username" :placeholder="t('auth.usernameOrEmail')" class="w-full rounded-lg border px-3 py-2" />
+ <input x-model="authForm.password" type="password" :placeholder="t('auth.password')" class="w-full rounded-lg border px-3 py-2" />
+  <button @click="login()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 font-medium" x-text="t('auth.login')"></button>
+  <button @click="view='register'" class="w-full text-sm text-zinc-600" x-text="t('auth.needAccount')"></button>
+  <div x-show="authError" class="text-sm text-red-600 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 p-3" x-text="authError"></div>
+  </section>
 
-        <section x-show="view==='register'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-          <h2 class="text-lg font-bold" x-text="t('auth.registerTitle')"></h2>
-          <div x-show="pendingIntent" class="rounded-lg bg-amber-50 p-3 text-xs border border-amber-200">
-            <div class="font-medium" x-text="pendingIntent?.courtLabel"></div>
-            <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
-            <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
-          </div>
-          <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
-          <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
-          <div class="flex items-center gap-2 relative">
-            <button @click="registerLangOpen=!registerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs">
-              <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />
-              <span x-text="t('lang.'+lang)"></span>
-            </button>
-            <div x-show="registerLangOpen" @click.outside="registerLangOpen=false" class="absolute left-0 top-10 mt-1 w-44 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
-              <template x-for="l in ['it','en','fr','de','es']" :key="l">
-                <button @click="lang=l; setLang(l); registerLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
-                  <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
-                  <span x-text="t('lang.'+l)"></span>
-                </button>
-              </template>
-            </div>
-          </div>
-          <button @click="register()" class="w-full rounded-lg bg-emerald-600 py-2 text-white" x-text="t('auth.confirm')"></button>
-          <button @click="view='login'" class="w-full text-sm text-zinc-600" x-text="t('auth.haveAccount')"></button>
-          <p x-show="authError" class="text-sm text-red-600" x-text="authError"></p>
-        </section>
+  <section x-show="view==='register'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+ <h2 class="text-lg font-bold" x-text="t('auth.registerTitle')"></h2>
+ <div x-show="pendingIntent" class="rounded-lg bg-amber-50 p-3 text-xs border border-amber-200">
+ <div class="font-medium" x-text="pendingIntent?.courtLabel"></div>
+ <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
+ <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
+ </div>
+ <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
+ <input x-model="regForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
+ <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
+ <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
+ <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
+ <div class="flex items-center gap-2 relative">
+ <button @click="registerLangOpen=!registerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs">
+ <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />
+ <span x-text="t('lang.'+lang)"></span>
+ </button>
+ <div x-show="registerLangOpen" @click.outside="registerLangOpen=false" class="absolute left-0 top-10 mt-1 w-44 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
+ <template x-for="l in ['it','en','fr','de','es']" :key="l">
+ <button @click="lang=l; setLang(l); registerLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
+ <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
+ <span x-text="t('lang.'+l)"></span>
+ </button>
+ </template>
+ </div>
+ </div>
+  <button @click="register()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 font-medium" x-text="t('auth.confirm')"></button>
+  <button @click="view='login'" class="w-full text-sm text-zinc-600" x-text="t('auth.haveAccount')"></button>
+  <div x-show="authError" class="text-sm text-red-600 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 p-3" x-text="authError"></div>
+ </section>
 
-        <section x-show="view==='me'" class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
-            <button @click="loadBookings()" class="rounded-lg border px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
-          </div>
-          <div class="flex gap-2">
-            <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-black text-white' : 'border bg-white'" x-text="t('myBookings.upcoming')"></button>
-            <button @click="bookingsTab='past'" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-black text-white' : 'border bg-white'" x-text="t('myBookings.past')"></button>
-            <button @click="bookingsTab='all'" class="rounded-full px-3 py-1 text-xs" :class="bookingsTab==='all' ? 'bg-black text-white' : 'border bg-white'" x-text="t('filter.all')"></button>
-          </div>
-          <p x-show="bookingsLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
-          <p x-show="bookingsError" class="text-sm text-red-600" x-text="bookingsError"></p>
-          <p x-show="!bookingsLoading && filteredBookings().length===0" class="rounded-xl border bg-white p-4 text-sm text-zinc-500 text-center" x-text="bookings.length===0 ? t('myBookings.hint') + ' — ' + t('myBookings.noBookings') : t('myBookings.noBookings')"></p>
-          <div class="space-y-3">
-            <template x-for="b in filteredBookings()" :key="b.id">
-              <div class="rounded-xl border bg-white p-4">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <div class="font-semibold" x-text="courtLabel(b)"></div>
-                    <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
-                    <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' racquet(s) rented' : 'No racquet rental'}`"></div>
-                    <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
-                    <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
-                  </div>
-                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
-                </div>
-                <div class="mt-3 flex gap-2" x-show="editingBooking!==b.id && (b.status==='pending_approval' || b.status==='approved')">
-                  <button @click="startEditBooking(b)" class="rounded-full border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.edit')"></button>
-                  <button @click="cancelBooking(b.id)" class="rounded-full border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.cancel')"></button>
-                </div>
-                <div x-show="editingBooking===b.id" class="mt-3 space-y-2 rounded-lg border bg-zinc-50 p-3">
-                  <textarea x-model="editNotes" rows="2" :placeholder="t('confirm.notes')" class="w-full rounded border px-2 py-1 text-xs"></textarea>
-                  <div class="grid grid-cols-2 gap-2">
-                    <select x-model.number="editRent" class="rounded border px-2 py-1 text-xs">
-                      <option value="0" x-text="'0 ' + t('confirm.rent')"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-                    </select>
-                    <div class="flex gap-2 text-xs">
-                      <label class="flex items-center gap-1"><input type="radio" value="single" x-model="editPlayers" /> <span x-text="t('confirm.single')"></span></label>
-                      <label class="flex items-center gap-1"><input type="radio" value="double" x-model="editPlayers" /> <span x-text="t('confirm.double')"></span></label>
-                    </div>
-                  </div>
-                  <div class="flex gap-2">
-                    <button @click="saveEditBooking(b.id)" class="rounded bg-black px-3 py-1 text-xs text-white" x-text="t('btn.save')"></button>
-                    <button @click="cancelEditBooking()" class="rounded border px-3 py-1 text-xs" x-text="t('btn.cancel')"></button>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-        </section>
+ <section x-show="view==='me'" class="space-y-4">
+ <div class="flex items-center justify-between">
+ <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
+ <button @click="loadBookings()" class="rounded-lg border px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
+ </div>
+ <div class="flex gap-2">
+ <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.upcoming')"></button>
+ <button @click="bookingsTab='past'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.past')"></button>
+ <button @click="bookingsTab='all'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='all' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('filter.all')"></button>
+ </div>
+ <p x-show="bookingsLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
+ <p x-show="bookingsError" class="text-sm text-red-600" x-text="bookingsError"></p>
+ <p x-show="!bookingsLoading && filteredBookings().length===0" class="rounded-xl border bg-white p-4 text-sm text-zinc-500 text-center" x-text="bookings.length===0 ? t('myBookings.hint') + ' — ' + t('myBookings.noBookings') : t('myBookings.noBookings')"></p>
+ <div class="space-y-3">
+ <template x-for="b in filteredBookings()" :key="b.id">
+ <div class="rounded-xl border bg-white p-4">
+ <div class="flex items-start justify-between gap-2">
+ <div>
+ <div class="font-semibold" x-text="courtLabel(b)"></div>
+ <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+ <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' racquet(s) rented' : 'No racquet rental'}`"></div>
+ <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
+ <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
+ </div>
+ <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
+ </div>
+ <div class="mt-3 flex gap-2" x-show="editingBooking!==b.id && (b.status==='pending_approval' || b.status==='approved')">
+ <button @click="startEditBooking(b)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.edit')"></button>
+ <button @click="cancelBooking(b.id)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.cancel')"></button>
+ </div>
+ <div x-show="editingBooking===b.id" class="mt-3 space-y-2 rounded-lg border bg-zinc-50 p-3">
+ <textarea x-model="editNotes" rows="2" :placeholder="t('confirm.notes')" class="w-full rounded border px-2 py-1 text-xs"></textarea>
+ <div class="grid grid-cols-2 gap-2">
+ <select x-model.number="editRent" class="rounded border px-2 py-1 text-xs">
+ <option value="0" x-text="'0 ' + t('confirm.rent')"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+ </select>
+ <div class="flex gap-2 text-xs">
+ <label class="flex items-center gap-1"><input type="radio" value="single" x-model="editPlayers" /> <span x-text="t('confirm.single')"></span></label>
+ <label class="flex items-center gap-1"><input type="radio" value="double" x-model="editPlayers" /> <span x-text="t('confirm.double')"></span></label>
+ </div>
+ </div>
+ <div class="flex gap-2">
+ <button @click="saveEditBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-3 py-1 text-xs" x-text="t('btn.save')"></button>
+ <button @click="cancelEditBooking()" class="rounded border px-3 py-1 text-xs" x-text="t('btn.cancel')"></button>
+ </div>
+ </div>
+ </div>
+ </template>
+ </div>
+ </section>
 
-        <section x-show="view==='profile'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6" x-init="if(user) loadProfile()">
-          <h2 class="text-xl font-bold" x-text="t('nav.profile')"></h2>
-          <p x-show="profileLoading" class="text-sm text-zinc-500">Loading…</p>
-          <p x-show="profileError" class="text-sm text-red-600" x-text="profileError"></p>
-          <p x-show="profileSuccess" class="text-sm text-emerald-600" x-text="profileSuccess"></p>
-          <div class="space-y-3">
-            <input x-model="profileForm.username" :placeholder="t('profile.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <input x-model="profileForm.email" :placeholder="t('profile.email')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <div class="grid grid-cols-2 gap-2">
-              <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-              <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            </div>
-            <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
-              <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
-              <option value="male" x-text="t('profile.gender.male')"></option>
-              <option value="female" x-text="t('profile.gender.female')"></option>
-              <option value="other" x-text="t('profile.gender.other')"></option>
-              <option value="prefer_not_to_say" x-text="t('profile.gender.prefer_not_to_say')"></option>
-            </select>
-            <input x-model="profileForm.birthdate" type="date" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <select x-model="profileForm.preferred_sport" class="w-full rounded-lg border px-3 py-2 text-sm">
-              <option value="" x-text="t('profile.preferredSport.none')"></option>
-              <option value="tennis">Tennis</option>
-              <option value="padel">Padel</option>
-            </select>
-            <div class="relative">
-              <button @click="profileLangOpen=!profileLangOpen" type="button" class="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm bg-white">
-                <img :src="flagUrl(profileForm.preferred_language)" class="h-3 w-4 object-cover rounded-sm" :alt="profileForm.preferred_language" />
-                <span x-text="t('lang.'+profileForm.preferred_language)"></span>
-              </button>
-              <div x-show="profileLangOpen" @click.outside="profileLangOpen=false" class="absolute left-0 mt-1 w-full rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
-                <template x-for="l in ['it','en','fr','de','es']" :key="l">
-                  <button type="button" @click="profileForm.preferred_language=l; profileLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
-                    <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
-                    <span x-text="t('lang.'+l)"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-            <button @click="saveProfile()" class="w-full rounded-lg bg-black py-2 text-sm text-white" x-text="t('profile.save')"></button>
-          </div>
-        </section>
+ <section x-show="view==='profile'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6" x-init="if(user) loadProfile()">
+ <h2 class="text-xl font-bold" x-text="t('nav.profile')"></h2>
+ <p x-show="profileLoading" class="text-sm text-zinc-500" x-text="t('profile.loading')"></p>
+ <p x-show="profileError" class="text-sm text-red-600" x-text="profileError"></p>
+ <p x-show="profileSuccess" class="text-sm text-emerald-600" x-text="profileSuccess"></p>
+ <div class="space-y-3">
+ <input x-model="profileForm.username" :placeholder="t('profile.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <input x-model="profileForm.email" :placeholder="t('profile.email')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <div class="grid grid-cols-2 gap-2">
+ <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ </div>
+ <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
+ <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
+ <option value="male" x-text="t('profile.gender.male')"></option>
+ <option value="female" x-text="t('profile.gender.female')"></option>
+ <option value="other" x-text="t('profile.gender.other')"></option>
+ <option value="prefer_not_to_say" x-text="t('profile.gender.prefer_not_to_say')"></option>
+ </select>
+ <input x-model="profileForm.birthdate" type="date" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <select x-model="profileForm.preferred_sport" class="w-full rounded-lg border px-3 py-2 text-sm">
+ <option value="" x-text="t('profile.preferredSport.none')"></option>
+ <option value="tennis">Tennis</option>
+ <option value="padel">Padel</option>
+ </select>
+ <div class="relative">
+ <button @click="profileLangOpen=!profileLangOpen" type="button" class="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm bg-white">
+ <img :src="flagUrl(profileForm.preferred_language)" class="h-3 w-4 object-cover rounded-sm" :alt="profileForm.preferred_language" />
+ <span x-text="t('lang.'+profileForm.preferred_language)"></span>
+ </button>
+ <div x-show="profileLangOpen" @click.outside="profileLangOpen=false" class="absolute left-0 mt-1 w-full rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
+ <template x-for="l in ['it','en','fr','de','es']" :key="l">
+ <button type="button" @click="profileForm.preferred_language=l; profileLangOpen=false" class="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-zinc-50 text-left">
+ <img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" />
+ <span x-text="t('lang.'+l)"></span>
+ </button>
+ </template>
+ </div>
+ </div>
+ <button @click="saveProfile()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('profile.save')"></button>
+ </div>
+ </section>
 
-        <section x-show="view==='admin'" class="space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-xl font-bold" x-text="t('admin.title')"></h2>
-            <button @click="loadAdminBookings(); loadAdminSettings()" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
-          </div>
-          <!-- Auto-approve toggle -->
-          <div class="flex items-center justify-between rounded-xl border bg-white p-4" x-show="adminSettings">
-            <div>
-              <div class="font-medium text-sm">Auto-approve bookings</div>
-              <div class="text-xs text-zinc-500" x-text="adminSettings ? (adminSettings.auto_approve_bookings ? 'New bookings auto-approved' : 'Requires manual approval') : ''"></div>
-            </div>
-            <button @click="toggleAutoApprove()" class="rounded-full px-4 py-2 text-xs font-medium" :class="adminSettings?.auto_approve_bookings ? 'bg-emerald-600 text-white' : 'bg-zinc-200'" x-text="adminSettings?.auto_approve_bookings ? 'ON' : 'OFF'"></button>
-          </div>
-          <div class="flex gap-2">
-            <select x-model="adminFilter" @change="loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
-              <option value="pending_approval" x-text="t('status.pending_approval')"></option>
-              <option value="approved" x-text="t('status.approved')"></option>
-              <option value="pending_registration" x-text="t('status.pending_registration')"></option>
-              <option value="">All</option>
-            </select>
-            <span x-show="adminLoading" class="text-xs text-zinc-500 py-2">Loading…</span>
-          </div>
-          <p x-show="adminError" class="text-sm text-red-600" x-text="adminError"></p>
-          <p x-show="!adminLoading && adminBookings.length===0" class="rounded-xl border bg-white p-6 text-center text-sm text-zinc-500">No bookings in this queue</p>
-          <div class="space-y-3">
-            <template x-for="b in adminBookings" :key="b.id">
-              <div class="rounded-xl border bg-white p-4">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <div class="font-semibold" x-text="courtLabel(b)"></div>
-                    <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
-                    <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()} · user ${String(b.userId||'').slice(0,8)}`"></div>
-                    <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
-                    <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)}`"></div>
-                  </div>
-                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
-                </div>
-                <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval'">
-                  <button @click="approveBooking(b.id)" class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700" x-text="t('btn.approve')"></button>
-                  <button @click="rejectBooking(b.id)" class="rounded-full border px-4 py-2 text-xs hover:bg-zinc-50" x-text="t('btn.reject')"></button>
-                </div>
-              </div>
-            </template>
-          </div>
-          <div class="rounded-xl border bg-white p-4 md:col-span-2">
-            <div class="flex items-center justify-between mb-3">
-              <div class="font-semibold" x-text="t('admin.courts')"></div>
-              <span x-show="adminCourtsLoading" class="text-xs text-zinc-500">Loading…</span>
-            </div>
-            <div x-show="adminCourtError" class="text-xs text-red-600 mb-2" x-text="adminCourtError"></div>
-            <div x-show="adminCourtSuccess" class="text-xs text-emerald-600 mb-2" x-text="adminCourtSuccess"></div>
-            <div class="grid gap-2 md:grid-cols-4 mb-3">
-              <input type="number" x-model.number="adminCourtForm.number" placeholder="Number" class="rounded border px-2 py-1 text-sm" />
-              <select x-model="adminCourtForm.type" class="rounded border px-2 py-1 text-sm"><option value="tennis">Tennis</option><option value="padel">Padel</option></select>
-              <input x-model="adminCourtForm.name" placeholder="Name (optional)" class="rounded border px-2 py-1 text-sm" />
-              <input x-model="adminCourtForm.surface" placeholder="Surface" class="rounded border px-2 py-1 text-sm" />
-            </div>
-            <div class="flex gap-2 mb-4">
-              <button x-show="!editingCourtId" @click="createCourt()" class="rounded bg-black px-4 py-2 text-xs text-white" x-text="t('btn.create')"></button>
-              <template x-if="editingCourtId">
-                <div class="flex gap-2">
-                  <button @click="updateCourt()" class="rounded bg-emerald-600 px-4 py-2 text-xs text-white" x-text="t('btn.update')"></button>
-                  <button @click="cancelEditCourt()" class="rounded border px-4 py-2 text-xs" x-text="t('btn.cancel')"></button>
-                </div>
-              </template>
-            </div>
-            <div class="space-y-2">
-              <template x-for="c in adminCourts" :key="c.id">
-                <div class="flex items-center justify-between rounded border px-3 py-2 text-sm">
-                  <div>
-                    <span class="font-medium" x-text="`#${c.number} · ${c.type}`"></span>
-                    <span class="text-zinc-500" x-text="c.name ? ' · '+c.name : ''"></span>
-                    <span class="text-zinc-500" x-text="c.surface ? ' ('+c.surface+')' : ''"></span>
-                    <span class="ml-2 rounded px-1 text-xs" :class="c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-200'" x-text="c.is_active ? 'active' : 'disabled'"></span>
-                  </div>
-                  <div class="flex gap-1">
-                    <button @click="startEditCourt(c)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
-                    <button @click="deleteCourt(c.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.disable')"></button>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
-          <div class="rounded-xl border bg-white p-4">
-            <div class="flex items-center justify-between mb-3">
-              <div class="font-semibold" x-text="t('admin.scheduledLessons')"></div>
-              <span x-show="adminLessonsLoading" class="text-xs text-zinc-500" x-text="t('myBookings.loading')"></span>
-            </div>
-            <div x-show="adminLessonError" class="text-xs text-red-600 mb-2" x-text="adminLessonError"></div>
-            <div class="grid gap-2 md:grid-cols-5 mb-3">
-              <select x-model="adminLessonForm.courtId" class="rounded border px-2 py-1 text-sm">
-                <option value="" x-text="t('admin.lessons.allCourts')"></option>
-                <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`#${c.number} ${c.type}`"></option></template>
-              </select>
-              <select x-model.number="adminLessonForm.dayOfWeek" class="rounded border px-2 py-1 text-sm">
-                <option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option><option value="0">Sun</option>
-              </select>
-              <input type="time" x-model="adminLessonForm.startTime" class="rounded border px-2 py-1 text-sm" />
-              <input type="time" x-model="adminLessonForm.endTime" class="rounded border px-2 py-1 text-sm" />
-              <input x-model="adminLessonForm.reason" :placeholder="t('admin.lessons.reason')" class="rounded border px-2 py-1 text-sm" />
-            </div>
-            <button @click="createLesson()" class="rounded bg-amber-700 px-4 py-2 text-xs text-white" x-text="t('admin.lessons.add')"></button>
-            <div class="mt-3 space-y-2">
-              <template x-for="l in adminLessons" :key="l.id">
-                <div class="flex items-center justify-between rounded border px-3 py-2 text-sm" :class="l.isActive ? 'bg-amber-50 border-amber-200' : 'bg-zinc-100 opacity-60'">
-                  <div>
-                    <span class="font-medium" x-text="l.reason"></span>
-                    <span class="text-zinc-500" x-text="` · ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][l.dayOfWeek]} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
-                    <span class="text-zinc-500" x-text="l.courtId ? ' · Court ' + (adminCourts.find(c=>c.id===l.courtId)?.number || l.courtId.slice(0,4)) : ' · All courts'"></span>
-                  </div>
-                  <div class="flex gap-1">
-                    <button @click="toggleLesson(l.id, l.isActive)" class="rounded border px-2 py-1 text-xs" x-text="l.isActive ? t('btn.disable') : t('btn.enable')"></button>
-                    <button @click="deleteLesson(l.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
-                  </div>
-                </div>
-              </template>
-              <p x-show="!adminLessonsLoading && adminLessons.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.lessons.noLessons')"></p>
-            </div>
-          </div>
-          <div class="grid gap-4 md:grid-cols-2 pt-4 border-t">
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.timetable')"></div><div class="text-sm text-zinc-600">PUT /api/timetable · 30/60/90/120</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.blocks')"></div><div class="text-sm text-zinc-600">Ad-hoc blocks via POST /api/blocks</div></div>
-            <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('admin.settings')"></div><div class="text-sm" x-text="t('admin.settings.desc')"></div></div>
-          </div>
-        </section>
-      </main>
+ <section x-show="view==='admin-courts'" class="space-y-4">
+ <div class="flex items-center gap-2">
+ 
+ <h2 class="text-xl font-bold" x-text="t('admin.courts.manage')"></h2>
+ </div>
+ <div class="rounded-xl border bg-white p-4">
+ <div class="flex items-center justify-between mb-3">
+ <div class="font-semibold" x-text="t('admin.courts') + ' — definition'"></div>
+ <span x-show="adminCourtsLoading" class="text-xs text-zinc-500" x-text="t('myBookings.loading')"></span>
+ </div>
+ <div x-show="adminCourtError" class="text-xs text-red-600 mb-2" x-text="adminCourtError"></div>
+ <div x-show="adminCourtSuccess" class="text-xs text-emerald-600 mb-2" x-text="adminCourtSuccess"></div>
+ <div class="grid gap-2 md:grid-cols-4 mb-3">
+ <input type="number" x-model.number="adminCourtForm.number" :placeholder="t('admin.courts.number')" class="rounded border px-2 py-1 text-sm" />
+ <select x-model="adminCourtForm.type" class="rounded border px-2 py-1 text-sm"><option value="tennis">Tennis</option><option value="padel">Padel</option></select>
+ <input x-model="adminCourtForm.name" :placeholder="t('admin.courts.namePlaceholder')" class="rounded border px-2 py-1 text-sm" />
+ <input x-model="adminCourtForm.surface" :placeholder="t('admin.courts.surfacePlaceholder')" class="rounded border px-2 py-1 text-sm" />
+ </div>
+ <div class="flex gap-2 mb-4">
+ <button x-show="!editingCourtId" @click="createCourt()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.create')"></button>
+ <template x-if="editingCourtId">
+ <div class="flex gap-2">
+ <button @click="updateCourt()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.update')"></button>
+ <button @click="cancelEditCourt()" class="rounded border px-4 py-2 text-xs" x-text="t('btn.cancel')"></button>
+ </div>
+ </template>
+ </div>
+ <div class="space-y-2">
+ <template x-for="c in adminCourts" :key="c.id">
+ <div class="flex items-center justify-between rounded border px-3 py-2 text-sm">
+ <div>
+ <span class="font-medium" x-text="`#${c.number} · ${c.type}`"></span>
+ <span class="text-zinc-500" x-text="c.name ? ' · '+c.name : ''"></span>
+ <span class="text-zinc-500" x-text="c.surface ? ' ('+c.surface+')' : ''"></span>
+ <span class="ml-2 rounded px-1 text-xs" :class="c.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-200'" x-text="c.is_active ? t('court.active') : t('court.inactive')"></span>
+ </div>
+ <div class="flex gap-1">
+ <button @click="startEditCourt(c)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+ <button @click="deleteCourt(c.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.disable')"></button>
+ </div>
+ </div>
+ </template>
+ </div>
+ </div>
+ </section>
 
-      <footer class="border-t bg-white px-4 py-4 text-center text-xs text-zinc-500" x-text="t('footer')"></footer>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+ <section x-show="view==='admin-users'" class="space-y-4">
+ <div class="flex items-center gap-2">
+ 
+ <h2 class="text-xl font-bold" x-text="t('admin.users.registered')"></h2>
+  <button @click="view='admin-create-user'; location.hash='admin-create-user'; cancelEditUser()" class="ml-auto rounded bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-3 py-1 text-xs" x-text="t('admin.users.createUser')"></button>
+ </div>
+ <div class="rounded-xl border bg-white p-4">
+ <p x-show="adminUsersError" class="text-xs text-red-600 mb-2" x-text="adminUsersError"></p>
+ <div class="flex gap-2 mb-3">
+ <input x-model="adminUsersSearch" @input.debounce.500ms="loadAdminUsers()" :placeholder="t('admin.users.searchPlaceholder')" class="flex-1 rounded border px-3 py-2 text-sm" />
+ <select x-model="adminUsersRole" @change="loadAdminUsers()" class="rounded border px-3 py-2 text-sm">
+ <option value="" x-text="t('admin.users.allRoles')"></option><option value="visitor">visitor</option><option value="associate">associate</option><option value="admin">admin</option>
+ </select>
+ <button @click="loadAdminUsers()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.refresh')"></button>
+ </div>
+ <div class="space-y-2 max-h-96 overflow-auto">
+  <template x-for="u in adminUsers" :key="u.id">
+  <div @click="viewUser(u)" class="flex items-center justify-between rounded border px-3 py-2 text-sm cursor-pointer hover:bg-zinc-50">
+  <div>
+  <div class="font-medium" x-text="`${u.username} (${u.first_name} ${u.last_name})`"></div>
+  <div class="text-xs text-zinc-500" x-text="`${u.email} · ${u.role} · ${u.mobile || ''}`"></div>
+  </div>
+  <div class="flex items-center gap-2">
+   <span class="rounded px-2 py-1 text-xs" :class="u.role==='admin' ? 'bg-red-100 text-red-700' : u.role==='associate' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'" x-text="u.role"></span>
+  <button @click.stop="startEditUser(u); view='admin-create-user'; location.hash='admin-create-user'" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+   <button @click.stop="deleteAdminUser(u.id)" :disabled="u.role==='admin' && adminUsers.filter(a=>a.role==='admin').length<=1" :class="(u.role==='admin' && adminUsers.filter(a=>a.role==='admin').length<=1) ? 'opacity-40 cursor-not-allowed' : ''" :title="u.role==='admin' && adminUsers.filter(a=>a.role==='admin').length<=1 ? t('admin.users.lastAdmin') : ''" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
+  </div>
+  </div>
+  </template>
+ <p x-show="!adminUsersLoading && adminUsers.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.users.noUsers')"></p>
+ </div>
+ </div>
+ </section>
+
+ <section x-show="view==='admin-create-user'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+ <div class="flex items-center gap-2">
+ <button @click="view='admin-users'; location.hash='admin-users'; cancelEditUser()" class="rounded border px-3 py-1 text-xs" x-text="t('btn.back')"></button>
+  <h2 class="text-lg font-bold" x-text="editingUserId ? t('admin.users.editUser') : t('admin.users.createUser')"></h2>
+ </div>
+ <p x-show="adminUsersError" class="text-xs text-red-600" x-text="adminUsersError"></p>
+ <p x-show="adminUserSuccess" class="text-xs text-emerald-600" x-text="adminUserSuccess"></p>
+ <!-- Reuses same registration form fields -->
+ <input x-model="adminUserForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <input x-model="adminUserForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <div class="grid grid-cols-2 gap-2">
+ <input x-model="adminUserForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <input x-model="adminUserForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ </div>
+ <input x-model="adminUserForm.password" type="password" :placeholder="editingUserId ? 'password (leave blank to keep)' : t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+ <select x-model="adminUserForm.role" class="w-full rounded-lg border px-3 py-2 text-sm">
+ <option value="visitor">visitor</option><option value="associate">associate</option><option value="admin">admin</option>
+ </select>
+ <div class="flex gap-2">
+ <button x-show="!editingUserId" @click="createAdminUser(); if(!adminUsersError) { view='admin-users'; location.hash='admin-users'; }" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm" x-text="t('btn.create')"></button>
+ <button x-show="editingUserId" @click="updateAdminUser(); if(!adminUsersError) { view='admin-users'; location.hash='admin-users'; }" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm" x-text="t('btn.update')"></button>
+ <button @click="cancelEditUser(); view='admin-users'; location.hash='admin-users'" class="flex-1 rounded-lg border py-2 text-sm" x-text="t('btn.cancel')"></button>
+ </div>
+ </section>
+
+    <section x-show="view==='admin-view-user'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+    <div class="flex items-center gap-2">
+   <h2 class="text-lg font-bold" x-text="viewedUser?.username || ''"></h2>
+  <span class="ml-auto rounded px-2 py-1 text-xs" :class="viewedUser?.role==='admin' ? 'bg-red-100 text-red-700' : viewedUser?.role==='associate' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'" x-text="viewedUser?.role || ''"></span>
+  </div>
+  <div class="space-y-3">
+  <input :value="viewedUser?.username || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.username')" />
+  <input :value="viewedUser?.email || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.email')" />
+  <div class="grid grid-cols-2 gap-2">
+  <input :value="viewedUser?.first_name || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.firstName')" />
+  <input :value="viewedUser?.last_name || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.lastName')" />
+  </div>
+  <input :value="viewedUser?.mobile || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.mobile')" />
+  <input :value="viewedUser?.gender || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.gender')" />
+  <input :value="viewedUser?.birthdate || ''" disabled type="text" class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.birthdate')" />
+  <input :value="viewedUser?.preferred_sport || viewedUser?.preferredSport || ''" disabled class="w-full rounded-lg border px-3 py-2 text-sm bg-zinc-100" :placeholder="t('profile.preferredSport')" />
+  <div class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm bg-zinc-100">
+  <img :src="viewedUser ? flagUrl(viewedUser.preferred_language || viewedUser.preferredLanguage || 'it') : ''" class="h-3 w-4 object-cover rounded-sm" :alt="viewedUser?.preferred_language" />
+  <span x-text="viewedUser ? t('lang.'+(viewedUser.preferred_language || viewedUser.preferredLanguage || 'it')) : ''"></span>
+  </div>
+  </div>
+  <div class="flex gap-2">
+   <button @click="startEditUser(viewedUser); view='admin-create-user'; location.hash='admin-create-user'" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm" x-text="t('btn.edit')"></button>
+   <button @click="backFromViewUser()" class="flex-1 rounded-lg border py-2 text-sm" x-text="t('btn.back')"></button>
+  </div>
+  </section>
+
+  <section x-show="view==='admin-bookings'" class="space-y-4">
+  <div class="flex items-center gap-2">
+  <h2 class="text-xl font-bold" x-text="t('admin.bookings')"></h2>
+  </div>
+ <div class="flex items-center justify-between rounded-xl border bg-white p-4" x-show="adminSettings">
+ <div>
+ <div class="font-medium text-sm" x-text="t('admin.autoApprove')"></div>
+  <div class="text-xs text-zinc-500" x-text="adminSettings ? (adminSettings.auto_approve_bookings ? t('admin.autoApprove.enabled') : t('admin.autoApprove.disabled')) : ''"></div>
+ </div>
+ <button @click="toggleAutoApprove()" class="rounded-lg px-4 py-2 text-xs font-medium" :class="adminSettings?.auto_approve_bookings ? 'bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300' : 'bg-zinc-200'" x-text="adminSettings?.auto_approve_bookings ? 'ON' : 'OFF'"></button>
+ </div>
+ <div class="flex gap-2">
+  <select x-model="adminFilter" @change="loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
+  <option value="pending_approval" x-text="t('status.pending_approval')"></option>
+  <option value="approved" x-text="t('status.approved')"></option>
+  <option value="" x-text="t('filter.all')"></option>
+  </select>
+ <span x-show="adminLoading" class="text-xs text-zinc-500 py-2" x-text="t('myBookings.loading')"></span>
+ </div>
+ <p x-show="adminError" class="text-sm text-red-600" x-text="adminError"></p>
+ <p x-show="!adminLoading && adminBookings.length===0" class="rounded-xl border bg-white p-6 text-center text-sm text-zinc-500" x-text="t('admin.noBookings')"></p>
+ <div class="space-y-3">
+ <template x-for="b in adminBookings" :key="b.id">
+ <div class="rounded-xl border bg-white p-4">
+ <div class="flex items-start justify-between gap-2">
+ <div>
+ <div class="font-semibold" x-text="courtLabel(b)"></div>
+ <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+   <div class="text-xs text-zinc-500"><span x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()} · `"></span><button @click="viewUserById(b.userId)" class="underline hover:text-black hover:decoration-zinc-400" x-text="b.username || String(b.userId||'').slice(0,8)"></button></div>
+ <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
+ <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)}`"></div>
+ </div>
+ <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
+ </div>
+ <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval'">
+ <button @click="approveBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.approve')"></button>
+ <button @click="rejectBooking(b.id)" class="rounded-lg border px-4 py-2 text-xs hover:bg-zinc-50" x-text="t('btn.reject')"></button>
+ </div>
+ </div>
+ </template>
+ </div>
+ </section>
+
+ <section x-show="view==='admin-blocks'" class="space-y-4">
+ <div class="flex items-center gap-2">
+ 
+ <h2 class="text-xl font-bold" x-text="t('admin.blocks')"></h2>
+ </div>
+ <div class="rounded-xl border bg-white p-4">
+ <div class="flex items-center justify-between mb-3">
+ <div class="font-semibold" x-text="t('admin.scheduledLessons')"></div>
+ <span x-show="adminLessonsLoading" class="text-xs text-zinc-500" x-text="t('myBookings.loading')"></span>
+ </div>
+ <div x-show="adminLessonError" class="text-xs text-red-600 mb-2" x-text="adminLessonError"></div>
+  <div class="grid gap-2 md:grid-cols-5 mb-3">
+  <select x-model="adminLessonForm.courtId" class="rounded border px-2 py-1 text-sm">
+  <option value="" x-text="t('admin.lessons.allCourts')"></option>
+  <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`#${c.number} ${c.type}`"></option></template>
+  </select>
+  <select x-model.number="adminLessonForm.dayOfWeek" class="rounded border px-2 py-1 text-sm">
+  <option value="1" x-text="t('weekday.mon')"></option><option value="2" x-text="t('weekday.tue')"></option><option value="3" x-text="t('weekday.wed')"></option><option value="4" x-text="t('weekday.thu')"></option><option value="5" x-text="t('weekday.fri')"></option><option value="6" x-text="t('weekday.sat')"></option><option value="0" x-text="t('weekday.sun')"></option>
+  </select>
+  <input type="time" x-model="adminLessonForm.startTime" class="rounded border px-2 py-1 text-sm" />
+  <input type="time" x-model="adminLessonForm.endTime" class="rounded border px-2 py-1 text-sm" />
+  <input x-model="adminLessonForm.reason" :placeholder="t('admin.lessons.reason')" class="rounded border px-2 py-1 text-sm" />
+  </div>
+  <div class="flex gap-2">
+  <button x-show="!editingLessonId" @click="createLesson()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('admin.lessons.add')"></button>
+  <template x-if="editingLessonId">
+  <div class="flex gap-2">
+  <button @click="updateLesson()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.update')"></button>
+  <button @click="cancelEditLesson()" class="rounded border px-4 py-2 text-sm" x-text="t('btn.cancel')"></button>
+  </div>
+  </template>
+  </div>
+ <div class="mt-3 space-y-2">
+ <template x-for="l in adminLessons" :key="l.id">
+ <div class="flex items-center justify-between rounded border px-3 py-2 text-sm" :class="l.isActive ? 'bg-amber-50 border-amber-200' : 'bg-zinc-100 opacity-60'">
+ <div>
+ <span class="font-medium" x-text="l.reason"></span>
+ <span class="text-zinc-500" x-text="` · ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][l.dayOfWeek]} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
+ <span class="text-zinc-500" x-text="l.courtId ? ' · Court ' + (adminCourts.find(c=>c.id===l.courtId)?.number || l.courtId.slice(0,4)) : ' · All courts'"></span>
+ </div>
+  <div class="flex gap-1">
+  <button @click="startEditLesson(l)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+  <button @click="toggleLesson(l.id, l.isActive)" class="rounded border px-2 py-1 text-xs" x-text="l.isActive ? t('btn.disable') : t('btn.enable')"></button>
+  <button @click="deleteLesson(l.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
+  </div>
+ </div>
+ </template>
+ <p x-show="!adminLessonsLoading && adminLessons.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.lessons.noLessons')"></p>
+ </div>
+ </div>
+ </section>
+ </main>
+
+ <footer class="site-footer px-4 py-4 text-center text-xs text-zinc-500" x-text="t('footer')"></footer>
+ </div>
+ <script type="module" src="/src/main.ts"></script>
+ </body>
 </html>

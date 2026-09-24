@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { bookingIntentSchema } from "../types/schemas.js";
 import { randomUUID } from "crypto";
-import { bookings, timetables, appSettings } from "../db/schema.js";
+import { bookings, timetables, appSettings, users } from "../db/schema.js";
 import { eq, and, or, desc } from "drizzle-orm";
 
 function computeEnd(startTime: string, durationMin: number): string {
@@ -82,6 +82,13 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     }
     if (status) rows = rows.filter((r: any) => r.status === status);
     if (court_id) rows = rows.filter((r: any) => String(r.courtId) === String(court_id));
+    // Enrich with username for admin display (instead of hash)
+    try {
+      const userRows = await db.select().from(users);
+      const usernameById: Record<string, string> = {};
+      for (const u of userRows as any[]) usernameById[String(u.id)] = u.username;
+      rows = rows.map((r: any) => ({ ...r, username: usernameById[String(r.userId)] || null }));
+    } catch {}
     return reply.send(rows);
   });
 

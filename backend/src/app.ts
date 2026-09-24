@@ -77,8 +77,12 @@ export async function buildApp() {
     });
 
     // SPA fallback: any non-/api route that is not a file → index.html
+    // Return 404 for missing assets (so browser doesn't get text/html for JS/CSS)
     app.setNotFoundHandler((req, reply) => {
       if (req.url.startsWith("/api/") || req.url.startsWith("/health")) {
+        return reply.status(404).send({ error: "Not found" });
+      }
+      if (req.url.startsWith("/assets/") || req.url.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?)$/)) {
         return reply.status(404).send({ error: "Not found" });
       }
       return (reply as any).sendFile("index.html");

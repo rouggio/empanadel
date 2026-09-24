@@ -31,7 +31,14 @@ function app() {
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
     bookingsLoading: false as boolean,
     bookingsError: "" as string,
-    adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string; notes?: string; rentRacquets?: number; players?: number }>,
+    adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string; username?: string; notes?: string; rentRacquets?: number; players?: number }>,
+    adminUsers: [] as any[],
+    adminUsersLoading: false as boolean,
+    adminUsersError: "" as string,
+    adminUsersSearch: "" as string,
+    adminUsersRole: "" as string,
+    viewedUser: null as any | null,
+    viewedUserBack: "admin-users" as string,
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
@@ -109,13 +116,23 @@ function app() {
       if (hash) this.view = hash;
       window.addEventListener("hashchange", () => {
         this.view = location.hash.replace("#", "") || "home";
+        if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
-        if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); this.loadAdminLessons(); }
+        if (this.view === "admin-bookings" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+        if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
+        if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
+        if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
+        if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminCourts(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
-      if (this.view === "admin" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts(); this.loadAdminLessons(); }
+      if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
+      if (this.view === "admin-bookings" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+      if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
+      if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
+      if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
+      if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminCourts(); }
     },
 
     filteredCourts() {
@@ -226,7 +243,36 @@ function app() {
         body: JSON.stringify({ ...this.regForm, preferred_language: this.lang }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { this.authError = data.error || JSON.stringify(data); return; }
+      if (!res.ok) {
+        // Nice localized error list instead of technical JSON
+        if (data.fieldErrors || data.formErrors) {
+          const lines: string[] = [];
+          const fe = (data.fieldErrors || {}) as Record<string, string[]>;
+          for (const [field, errs] of Object.entries(fe)) {
+            const fieldLabel = this.t(`field.${field}`);
+            const label = fieldLabel === `field.${field}` ? field : fieldLabel;
+            const vKey = `validation.${field}`;
+            const vMsg = this.t(vKey);
+            const msg = vMsg === vKey ? (errs as string[]).join(", ") : vMsg;
+            lines.push(`• ${label}: ${msg}`);
+          }
+          for (const e of (data.formErrors as string[] || [])) lines.push(`• ${e}`);
+          if (lines.length === 0) lines.push(`• ${this.t("validation.generic")}`);
+          this.authError = lines.join("\n");
+          return;
+        }
+        if (data.error) {
+          const errStr = String(data.error).toLowerCase();
+          if (errStr.includes("already taken") || errStr.includes("unique") || errStr.includes("23505")) {
+            this.authError = `• ${this.t("error.taken")}`;
+          } else {
+            this.authError = `• ${data.error}`;
+          }
+          return;
+        }
+        this.authError = `• ${this.t("error.registerFailed")}\n${JSON.stringify(data)}`;
+        return;
+      }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
       // After registration, create the deferred booking if intent exists (with notes/rent/players from confirm)
@@ -254,11 +300,11 @@ function app() {
         this.pendingIntent = null;
       }
       await this.loadBookings();
-      // Admin lands on courts, visitor on my bookings
+      // Admin lands on bookings, visitor on my bookings
       if (this.user?.role === "admin") {
-        this.view = "courts";
-        location.hash = "courts";
-        this.loadAdminBookings(); this.loadAdminSettings(); this.loadAdminCourts();
+        this.view = "admin-bookings";
+        location.hash = "admin-bookings";
+        this.loadAdminBookings(); this.loadAdminSettings();
       } else {
         this.view = "me";
         location.hash = "me";
@@ -271,7 +317,30 @@ function app() {
       if (this.authForm.username.includes("@")) body.email = this.authForm.username; else body.username = this.authForm.username;
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { this.authError = data.error || "Login failed"; return; }
+      if (!res.ok) {
+        if (data.fieldErrors || data.formErrors) {
+          const lines: string[] = [];
+          const fe = (data.fieldErrors || {}) as Record<string, string[]>;
+          for (const [field, errs] of Object.entries(fe)) {
+            const fieldLabel = this.t(`field.${field}`);
+            const label = fieldLabel === `field.${field}` ? field : fieldLabel;
+            const vKey = `validation.${field}`;
+            const vMsg = this.t(vKey);
+            const msg = vMsg === vKey ? (errs as string[]).join(", ") : vMsg;
+            lines.push(`• ${label}: ${msg}`);
+          }
+          for (const e of (data.formErrors as string[] || [])) lines.push(`• ${e}`);
+          if (lines.length === 0) lines.push(`• ${this.t("validation.generic")}`);
+          this.authError = lines.join("\n");
+          return;
+        }
+        if (data.error && String(data.error).toLowerCase().includes("invalid credentials")) {
+          this.authError = `• ${this.t("error.loginFailed")}`;
+        } else {
+          this.authError = `• ${data.error || this.t("error.loginFailed")}`;
+        }
+        return;
+      }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || null;
       if (data.user?.preferred_language) {
@@ -300,9 +369,9 @@ function app() {
       }
       await this.loadBookings();
       if (this.user?.role === "admin") {
-        await this.loadAdminBookings(); await this.loadAdminSettings(); await this.loadAdminCourts();
-        this.view = "courts";
-        location.hash = "courts";
+        await this.loadAdminBookings(); await this.loadAdminSettings();
+        this.view = "admin-bookings";
+        location.hash = "admin-bookings";
       } else {
         this.view = "me";
         location.hash = "me";
@@ -384,6 +453,7 @@ function app() {
           endTime: (r.endTime || r.end_time || "").slice(0,5),
           status: r.status,
           userId: r.userId || r.user_id,
+          username: r.username,
           notes: r.notes,
           rentRacquets: r.rentRacquets ?? r.rent_racquets ?? 0,
           players: r.players ?? 2,
@@ -443,7 +513,7 @@ function app() {
       const token = localStorage.getItem("token");
       const res = await fetch("/api/courts", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ number: this.adminCourtForm.number, type: this.adminCourtForm.type, name: this.adminCourtForm.name || null, surface: this.adminCourtForm.surface || null }) });
       if (!res.ok) { this.adminCourtError = await res.text(); return; }
-      this.adminCourtSuccess = "Court created";
+      this.adminCourtSuccess = this.t("admin.courts.created");
       this.adminCourtForm = { number: null, type: "tennis", name: "", surface: "" };
       await this.loadAdminCourts(); await this.loadCourts();
     },
@@ -460,7 +530,7 @@ function app() {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/courts/${this.editingCourtId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ number: this.adminCourtForm.number, type: this.adminCourtForm.type, name: this.adminCourtForm.name || null, surface: this.adminCourtForm.surface || null }) });
       if (!res.ok) { this.adminCourtError = await res.text(); return; }
-      this.adminCourtSuccess = "Court updated";
+      this.adminCourtSuccess = this.t("admin.courts.updated");
       this.editingCourtId = null;
       this.adminCourtForm = { number: null, type: "tennis", name: "", surface: "" };
       await this.loadAdminCourts(); await this.loadCourts();
@@ -479,6 +549,10 @@ function app() {
     adminLessonsLoading: false as boolean,
     adminLessonError: "" as string,
     adminLessonForm: { courtId: "" as string, dayOfWeek: 1 as number, startTime: "15:00", endTime: "17:00", reason: "" } as { courtId: string; dayOfWeek: number; startTime: string; endTime: string; reason: string },
+    editingLessonId: null as string | null,
+    adminUserForm: { username: "", email: "", password: "", first_name: "", last_name: "", role: "visitor" as string, mobile: "" } as { username: string; email: string; password: string; first_name: string; last_name: string; role: string; mobile: string },
+    editingUserId: null as string | null,
+    adminUserSuccess: "" as string,
 
     async loadAdminLessons() {
       if (!this.user || this.user.role !== "admin") return;
@@ -503,6 +577,29 @@ function app() {
       await this.loadAdminLessons(); await this.loadAvailability();
     },
 
+    startEditLesson(l: any) {
+      this.editingLessonId = l.id;
+      this.adminLessonForm = { courtId: l.courtId || "", dayOfWeek: l.dayOfWeek, startTime: l.startTime.slice(0,5), endTime: l.endTime.slice(0,5), reason: l.reason };
+    },
+
+    cancelEditLesson() {
+      this.editingLessonId = null;
+      this.adminLessonForm = { courtId: "", dayOfWeek: 1, startTime: "15:00", endTime: "17:00", reason: "" };
+      this.adminLessonError = "";
+    },
+
+    async updateLesson() {
+      if (!this.editingLessonId) return;
+      if (!this.adminLessonForm.reason || !this.adminLessonForm.startTime || !this.adminLessonForm.endTime) { this.adminLessonError = "Reason and times required"; return; }
+      const token = localStorage.getItem("token");
+      const payload: any = { court_id: this.adminLessonForm.courtId || null, day_of_week: this.adminLessonForm.dayOfWeek, start_time: this.adminLessonForm.startTime, end_time: this.adminLessonForm.endTime, reason: this.adminLessonForm.reason };
+      const res = await fetch(`/api/blocking-rules/${this.editingLessonId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.adminLessonError = await res.text(); return; }
+      this.editingLessonId = null;
+      this.adminLessonForm = { courtId: "", dayOfWeek: 1, startTime: "15:00", endTime: "17:00", reason: "" };
+      await this.loadAdminLessons(); await this.loadAvailability();
+    },
+
     async deleteLesson(id: string) {
       if (!confirm("Delete this recurring block?")) return;
       const token = localStorage.getItem("token");
@@ -516,6 +613,100 @@ function app() {
       const res = await fetch(`/api/blocking-rules/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ is_active: !current }) });
       if (!res.ok) { alert("Toggle failed: " + await res.text()); return; }
       await this.loadAdminLessons(); await this.loadAvailability();
+    },
+
+    async loadAdminUsers() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminUsersLoading = true; this.adminUsersError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const params = new URLSearchParams();
+        if (this.adminUsersSearch) params.set("q", this.adminUsersSearch);
+        if (this.adminUsersRole) params.set("role", this.adminUsersRole);
+        const res = await fetch(`/api/users?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminUsers = await res.json();
+      } catch (e: any) { this.adminUsersError = e.message || String(e); }
+      finally { this.adminUsersLoading = false; }
+    },
+
+    async createAdminUser() {
+      this.adminUsersError = ""; this.adminUserSuccess = "";
+      if (!this.adminUserForm.username || !this.adminUserForm.email || !this.adminUserForm.password || !this.adminUserForm.first_name || !this.adminUserForm.last_name) { this.adminUsersError = "Username, email, password, first/last name required"; return; }
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ username: this.adminUserForm.username, email: this.adminUserForm.email, password: this.adminUserForm.password, first_name: this.adminUserForm.first_name, last_name: this.adminUserForm.last_name, role: this.adminUserForm.role, preferred_language: "it" }) });
+      if (!res.ok) { this.adminUsersError = await res.text(); return; }
+      this.adminUserSuccess = this.t("admin.users.created");
+      this.adminUserForm = { username: "", email: "", password: "", first_name: "", last_name: "", role: "visitor", mobile: "" };
+      await this.loadAdminUsers();
+    },
+
+    startEditUser(u: any) {
+      this.editingUserId = u.id;
+      this.adminUserForm = { username: u.username, email: u.email, password: "", first_name: u.first_name, last_name: u.last_name, role: u.role, mobile: u.mobile || "" };
+    },
+
+    cancelEditUser() { this.editingUserId = null; this.adminUserForm = { username: "", email: "", password: "", first_name: "", last_name: "", role: "visitor", mobile: "" }; this.adminUsersError = ""; },
+
+    async updateAdminUser() {
+      if (!this.editingUserId) return;
+      const token = localStorage.getItem("token");
+      const payload: any = { username: this.adminUserForm.username, email: this.adminUserForm.email, first_name: this.adminUserForm.first_name, last_name: this.adminUserForm.last_name, role: this.adminUserForm.role, mobile: this.adminUserForm.mobile || null };
+      if (this.adminUserForm.password) (payload as any).password = this.adminUserForm.password;
+      const res = await fetch(`/api/users/${this.editingUserId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.adminUsersError = await res.text(); return; }
+      this.adminUserSuccess = this.t("admin.users.updated");
+      this.editingUserId = null;
+      this.adminUserForm = { username: "", email: "", password: "", first_name: "", last_name: "", role: "visitor", mobile: "" };
+      await this.loadAdminUsers();
+    },
+
+    async deleteAdminUser(id: string) {
+      if (!confirm("Delete this user? This cannot be undone.")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
+      await this.loadAdminUsers();
+    },
+
+    viewUser(u: any) {
+      this.viewedUserBack = this.view;
+      this.viewedUser = u;
+      this.view = "admin-view-user";
+      location.hash = "admin-view-user";
+    },
+
+    async viewUserById(userId: string) {
+      if (!userId) return;
+      this.viewedUserBack = this.view;
+      let u = this.adminUsers.find((x: any) => String(x.id) === String(userId));
+      if (!u) {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(`/api/users`, { headers: { Authorization: `Bearer ${token}` } });
+          if (res.ok) {
+            const rows = await res.json();
+            u = rows.find((x: any) => String(x.id) === String(userId));
+          }
+        } catch {}
+      }
+      if (u) {
+        // viewUser will set viewedUserBack, but we already set it — avoid double overwrite
+        this.viewedUser = u;
+        this.view = "admin-view-user";
+        location.hash = "admin-view-user";
+      } else {
+        const b = this.adminBookings.find((x: any) => String(x.userId) === String(userId));
+        this.viewedUser = { id: userId, username: b?.username || String(userId).slice(0,8), email: "", first_name: "", last_name: "", role: "visitor", mobile: "", gender: "", birthdate: "", preferred_language: "it", preferred_sport: "" };
+        this.view = "admin-view-user";
+        location.hash = "admin-view-user";
+      }
+    },
+
+    backFromViewUser() {
+      const back = this.viewedUserBack && this.viewedUserBack !== "admin-view-user" ? this.viewedUserBack : "admin-users";
+      this.view = back;
+      location.hash = back;
     },
 
     async loadProfile() {
@@ -558,7 +749,7 @@ function app() {
       const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
       if (!res.ok) { this.profileError = await res.text(); return; }
       const updated = await res.json();
-      this.profileSuccess = "Profile updated";
+      this.profileSuccess = this.t("profile.updated");
       if (updated.preferred_language) { this.lang = updated.preferred_language; setLang(this.lang); localStorage.setItem("lang", this.lang); }
       if (updated.preferred_sport !== undefined) {
         this.filterType = updated.preferred_sport || "";

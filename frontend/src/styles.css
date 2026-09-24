@@ -1,1 +1,143 @@
 @import "tailwindcss";
+
+/* ============================================================
+   EMPANADEL THEME — single source of truth for all colors
+   Edit only this :root block to change the site palette.
+   ============================================================ */
+:root {
+  /* Page & surfaces */
+  --color-page-bg: #fafafa;          /* zinc-50 — body background */
+  --color-surface: #ffffff;          /* cards, modals, dropdowns */
+  --color-surface-hover: #fafafa;    /* zinc-50 hover for list items */
+  --color-text: #18181b;             /* zinc-900 */
+  --color-text-muted: #71717a;       /* zinc-500 */
+  --color-border: #e4e4e7;           /* zinc-200 */
+
+  /* Header / Footer — light green, intentionally distinct from buttons */
+  --color-header-bg: rgba(236, 253, 245, 0.8); /* emerald-50 @ 80% */
+  --color-header-border: #d4d4d8;              /* zinc-300 */
+  --color-footer-bg: rgba(236, 253, 245, 0.8); /* same as header */
+
+  /* Hero */
+  --color-hero-from: #51dcae; /* emerald-500 */
+  --color-hero-to: #b2ffc3;   /* teal-600 */
+  --color-hero-text: #ffffff;
+  --color-hero-cta-bg: #ffffff;
+  --color-hero-cta-text: #047857; /* emerald-700 */
+
+  /* Buttons — primary = very light green (emerald-200) as requested */
+  --color-btn-primary-bg: #a7f3d0;       /* emerald-200 — PRIMARY */
+  --color-btn-primary-hover: #6ee7b7;    /* emerald-300 */
+  --color-btn-primary-text: #064e3b;     /* emerald-900 */
+  --color-btn-primary-border: #6ee7b7;   /* emerald-300 */
+  --color-btn-dark-bg: #18181b;          /* zinc-900 / black — deprecated, use primary */
+  --color-btn-dark-text: #ffffff;
+  --color-btn-light-bg: #a7f3d0;         /* alias of primary */
+  --color-btn-light-hover: #6ee7b7;
+  --color-btn-light-text: #064e3b;
+  --color-btn-light-border: #6ee7b7;
+
+  /* Slots — availability grid */
+  --color-slot-available-bg: #ecfdf5;      /* emerald-50 */
+  --color-slot-available-border: #a7f3d0;  /* emerald-200 */
+  --color-slot-available-hover: #d1fae5;   /* emerald-100 */
+  --color-slot-booked-bg: #fef2f2;         /* red-50 */
+  --color-slot-booked-text: #b91c1c;       /* red-700 */
+  --color-slot-booked-border: #fecaca;     /* red-200 */
+  --color-slot-pending-bg: #fef3c7;        /* amber-100 */
+  --color-slot-pending-text: #b45309;      /* amber-700 */
+  --color-slot-pending-border: #fcd34d;    /* amber-300 */
+  --color-slot-lesson-bg: #78350f;         /* amber-900 */
+  --color-slot-lesson-border: #92400e;     /* amber-800 */
+  --color-slot-blocked-bg: #f4f4f5;        /* zinc-100 */
+  --color-slot-blocked-text: #a1a1aa;      /* zinc-400 */
+
+  /* Status badges */
+  --color-badge-active-bg: #d1fae5;   /* emerald-100 */
+  --color-badge-active-text: #047857; /* emerald-700 */
+  --color-badge-inactive-bg: #f4f4f5; /* zinc-100 */
+
+  /* Inputs — light green tone (more saturated so login is obvious) */
+  --color-input-bg: #f9fefb;            /* green-100 — light green for text fields, visible on white cards */
+  --color-input-border: #86efac;         /* green-300 — stronger border */
+  --color-input-focus-border: #6ee7b7;   /* emerald-300 */
+  --color-input-focus-ring: rgba(167, 243, 208, 0.5); /* emerald-200 @ 50% */
+
+  /* Alerts */
+  --color-alert-amber-border: #fcd34d; /* amber-300 */
+  --color-alert-amber-bg: #fffbeb;     /* amber-50 */
+  --color-alert-red-border: #fca5a5;   /* red-300 */
+  --color-alert-red-bg: #fef2f2;       /* red-50 */
+}
+
+/* Semantic helpers — use these classes in HTML instead of hard-coded tailwind colors */
+.site-header {
+  background: var(--color-header-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-header-border);
+}
+.site-footer {
+  background: var(--color-footer-bg);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--color-header-border);
+}
+.site-page {
+  background: var(--color-page-bg);
+  color: var(--color-text);
+}
+.btn-primary {
+  background: var(--color-btn-primary-bg);
+  color: var(--color-btn-primary-text);
+  border: 1px solid var(--color-btn-primary-border);
+}
+.btn-primary:hover {
+  background: var(--color-btn-primary-hover);
+}
+.btn-dark {
+  background: var(--color-btn-dark-bg);
+  color: var(--color-btn-dark-text);
+}
+.btn-light {
+  background: var(--color-btn-light-bg);
+  color: var(--color-btn-light-text);
+  border-color: var(--color-btn-light-border);
+}
+.btn-light:hover {
+  background: var(--color-btn-light-hover);
+}
+.hero-gradient {
+  background: linear-gradient(to bottom right, var(--color-hero-from), var(--color-hero-to));
+}
+
+/* Centralised text field styling — all inputs/textareas/selects inherit light green */
+input:not([type="radio"]):not([type="checkbox"]),
+textarea,
+select {
+  background-color: var(--color-input-bg) !important;
+  border-color: var(--color-input-border) !important;
+}
+input:not([type="radio"]):not([type="checkbox"]):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-input-focus-border) !important;
+  box-shadow: 0 0 0 3px var(--color-input-focus-ring);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* Chrome autofill is light blue (#e8f0fe) — override to our light green */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-input-bg) inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  caret-color: var(--color-text);
+  transition: background-color 5000s ease-in-out 0s;
+}

@@ -61,6 +61,7 @@ function app() {
     headerLangOpen: false as boolean,
     registerLangOpen: false as boolean,
     profileLangOpen: false as boolean,
+    adminMobileOpen: false as boolean,
 
     t(key: string): string {
       return translate(this.lang, key);

@@ -22,9 +22,19 @@
  <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
  </div>
  </template>
- </nav>
- <div class="flex items-center gap-2">
- <template x-if="!user">
+  </nav>
+  <!-- Mobile admin dropdown (top, mobile only) -->
+  <div x-show="user?.role==='admin'" class="md:hidden relative">
+  <button @click="adminMobileOpen=!adminMobileOpen" class="flex items-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-medium">Admin <span x-text="adminMobileOpen ? '▲' : '▼'"></span></button>
+  <div x-show="adminMobileOpen" @click.outside="adminMobileOpen=false" class="absolute left-0 top-10 mt-1 w-48 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
+  <a href="#admin-courts" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.courts.manage')"></a>
+  <a href="#admin-users" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.users')"></a>
+  <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
+  <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
+  </div>
+  </div>
+  <div class="flex items-center gap-2">
+  <template x-if="!user">
  <div class="flex items-center gap-2 relative">
  <button @click="headerLangOpen=!headerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium">
  <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />
@@ -47,33 +57,20 @@
  </div>
  </header>
 
- <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden overflow-x-auto">
- <a href="#courts" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.courts')"></a>
- <a href="#me" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.myBookings')"></a>
- <a href="#profile" x-show="user" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.profile')"></a>
- <template x-if="user?.role==='admin'">
- <div class="flex flex-1 gap-2">
- <a href="#admin-courts" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.courts.manage')"></a>
- <a href="#admin-users" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.users')"></a>
- <a href="#admin-bookings" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.bookings')"></a>
- <a href="#admin-blocks" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('admin.blocks.short')"></a>
- </div>
- </template>
- </nav>
+  <nav class="fixed inset-x-0 bottom-0 z-30 flex border-t bg-white px-2 py-2 md:hidden">
+  <a href="#courts" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.courts')"></a>
+  <a href="#me" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.myBookings')"></a>
+  <a href="#profile" x-show="user" class="flex flex-1 flex-col items-center text-xs whitespace-nowrap" x-text="t('nav.profile')"></a>
+  </nav>
 
  <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
  <section x-show="view==='home'" class="space-y-6">
- <div class="hero-gradient rounded-2xl p-8">
- <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
- <p class="mt-2 max-w-xl/90" x-text="t('hero.subtitle')"></p>
- <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-lg bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
- </div>
-  <div class="grid gap-4 md:grid-cols-3">
-  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.tennis')"></div><div class="text-sm text-zinc-600" x-text="t('card.tennis.desc')"></div></div>
-  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.padel')"></div><div class="text-sm text-zinc-600" x-text="t('card.padel.desc')"></div></div>
-  <div class="rounded-xl border bg-white p-4"><div class="font-semibold" x-text="t('card.lessons')"></div><div class="text-sm text-zinc-600" x-text="t('card.lessons.desc')"></div></div>
+  <div class="hero-gradient rounded-2xl p-8">
+  <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
+  <p class="mt-2 max-w-xl/90" x-text="t('hero.subtitle')"></p>
+  <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-lg bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
   </div>
-  </section>
+   </section>
 
  <section x-show="view==='courts'" class="space-y-4">
  <div class="flex flex-wrap items-center justify-between gap-2">
@@ -195,10 +192,7 @@
  </section>
 
  <section x-show="view==='me'" class="space-y-4">
- <div class="flex items-center justify-between">
- <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
- <button @click="loadBookings()" class="rounded-lg border px-3 py-1 text-xs" x-text="t('btn.refresh')"></button>
- </div>
+  <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
  <div class="flex gap-2">
  <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.upcoming')"></button>
  <button @click="bookingsTab='past'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.past')"></button>
@@ -215,31 +209,30 @@
  <div class="font-semibold" x-text="courtLabel(b)"></div>
  <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
   <div class="text-xs text-zinc-500" x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()}`"></div>
- <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
- <div class="mt-1 text-xs text-zinc-400" x-text="b.id.slice(0,8)"></div>
+  <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600" x-text="`&quot;${b.notes}&quot;`"></div>
+  </div>
+  <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
  </div>
- <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
- </div>
- <div class="mt-3 flex gap-2" x-show="editingBooking!==b.id && (b.status==='pending_approval' || b.status==='approved')">
- <button @click="startEditBooking(b)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.edit')"></button>
- <button @click="cancelBooking(b.id)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.cancel')"></button>
- </div>
- <div x-show="editingBooking===b.id" class="mt-3 space-y-2 rounded-lg border bg-zinc-50 p-3">
- <textarea x-model="editNotes" rows="2" :placeholder="t('confirm.notes')" class="w-full rounded border px-2 py-1 text-xs"></textarea>
- <div class="grid grid-cols-2 gap-2">
- <select x-model.number="editRent" class="rounded border px-2 py-1 text-xs">
- <option value="0" x-text="'0 ' + t('confirm.rent')"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
- </select>
- <div class="flex gap-2 text-xs">
- <label class="flex items-center gap-1"><input type="radio" value="single" x-model="editPlayers" /> <span x-text="t('confirm.single')"></span></label>
- <label class="flex items-center gap-1"><input type="radio" value="double" x-model="editPlayers" /> <span x-text="t('confirm.double')"></span></label>
- </div>
- </div>
- <div class="flex gap-2">
- <button @click="saveEditBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-3 py-1 text-xs" x-text="t('btn.save')"></button>
- <button @click="cancelEditBooking()" class="rounded border px-3 py-1 text-xs" x-text="t('btn.cancel')"></button>
- </div>
- </div>
+   <div class="mt-3 flex gap-2" x-show="editingBooking!==b.id && (b.status==='pending_approval' || b.status==='approved')">
+   <button @click="startEditBooking(b)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.edit')"></button>
+   <button @click="cancelBooking(b.id)" class="rounded-lg border px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.cancel')"></button>
+   </div>
+   <div x-show="editingBooking===b.id" class="mt-3 space-y-2 rounded-lg border bg-zinc-50 p-3">
+   <textarea x-model="editNotes" rows="2" :placeholder="t('confirm.notes')" class="w-full rounded border px-2 py-1 text-xs"></textarea>
+   <div class="grid grid-cols-2 gap-2">
+   <select x-model.number="editRent" class="rounded border px-2 py-1 text-xs">
+   <option value="0" x-text="'0 ' + t('confirm.rent')"></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+   </select>
+   <div class="flex gap-2 text-xs">
+   <label class="flex items-center gap-1"><input type="radio" value="single" x-model="editPlayers" /> <span x-text="t('confirm.single')"></span></label>
+   <label class="flex items-center gap-1"><input type="radio" value="double" x-model="editPlayers" /> <span x-text="t('confirm.double')"></span></label>
+   </div>
+   </div>
+   <div class="flex gap-2">
+   <button @click="saveEditBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-3 py-1 text-xs" x-text="t('btn.save')"></button>
+   <button @click="cancelEditBooking()" class="rounded border px-3 py-1 text-xs" x-text="t('btn.cancel')"></button>
+   </div>
+   </div>
  </div>
  </template>
  </div>
@@ -449,10 +442,9 @@
  <div class="font-semibold" x-text="courtLabel(b)"></div>
  <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
    <div class="text-xs text-zinc-500"><span x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()} · `"></span><button @click="viewUserById(b.userId)" class="underline hover:text-black hover:decoration-zinc-400" x-text="b.username || String(b.userId||'').slice(0,8)"></button></div>
- <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
- <div class="text-xs text-zinc-400" x-text="`ID ${b.id.slice(0,8)}`"></div>
- </div>
- <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
+  <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
+  </div>
+  <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
  </div>
  <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval'">
  <button @click="approveBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.approve')"></button>

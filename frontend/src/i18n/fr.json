@@ -217,5 +217,7 @@
   "admin.timetable.orphanError": "La modification des horaires rendrait des réservations orphelines",
   "admin.timetable.forceHint": "Veuillez d'abord annuler ou déplacer les réservations en conflit",
   "admin.notifications.notifyOnApproval": "Notifier l'utilisateur en cas d'approbation",
-  "admin.notifications.notifyOnRejection": "Notifier l'utilisateur en cas de rejet"
+  "admin.notifications.notifyOnRejection": "Notifier l'utilisateur en cas de rejet",
+  "field.public_url": "URL publique",
+  "validation.url": "URL invalide (utilisez https://...)"
 }

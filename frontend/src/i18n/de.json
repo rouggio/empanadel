@@ -217,5 +217,7 @@
   "admin.timetable.orphanError": "Zeitplanänderung würde Live-Buchungen verwaissen",
   "admin.timetable.forceHint": "Bitte stornieren oder verschieben Sie zuerst die konfligierenden Buchungen",
   "admin.notifications.notifyOnApproval": "Nutzer bei Genehmigung benachrichtigen",
-  "admin.notifications.notifyOnRejection": "Nutzer bei Ablehnung benachrichtigen"
+  "admin.notifications.notifyOnRejection": "Nutzer bei Ablehnung benachrichtigen",
+  "field.public_url": "Öffentliche URL",
+  "validation.url": "Ungültige URL (nutze https://...)"
 }

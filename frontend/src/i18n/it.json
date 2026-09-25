@@ -217,5 +217,7 @@
   "admin.timetable.orphanError": "La modifica dell’orario creerebbe prenotazioni orfane",
   "admin.timetable.forceHint": "Annulla o sposta prima le prenotazioni in conflitto",
   "admin.notifications.notifyOnApproval": "Avvisa utente all'approvazione",
-  "admin.notifications.notifyOnRejection": "Avvisa utente al rifiuto"
+  "admin.notifications.notifyOnRejection": "Avvisa utente al rifiuto",
+  "field.public_url": "URL pubblico",
+  "validation.url": "URL non valido (usa https://...)"
 }

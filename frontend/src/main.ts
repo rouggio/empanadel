@@ -612,7 +612,8 @@ function app() {
         const res = await fetch("/api/club-info");
         if (res.ok) {
           this.clubInfo = await res.json();
-          this.clubForm = { club_name: this.clubInfo?.club_name || "", club_phone: this.clubInfo?.club_phone || "", club_address: this.clubInfo?.club_address || "" };
+          const keepUrl = this.clubForm.public_url;
+          this.clubForm = { club_name: this.clubInfo?.club_name || "", club_phone: this.clubInfo?.club_phone || "", club_address: this.clubInfo?.club_address || "", public_url: keepUrl || "https://empanadel.onrender.com" };
         }
       } catch {}
     },
@@ -633,10 +634,32 @@ function app() {
     async saveClubInfo() {
       this.clubInfoError = ""; this.clubInfoSuccess = "";
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null, public_url: this.clubForm.public_url || null }) });
-      if (!res.ok) { this.clubInfoError = await res.text(); return; }
+      let url = this.clubForm.public_url?.trim() || null;
+      if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null, public_url: url }) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null) as any;
+        if (data?.fieldErrors?.public_url) {
+          this.clubInfoError = `${this.t('field.public_url')}: ${this.t('validation.url')}`;
+        } else if (data?.fieldErrors) {
+          const lines: string[] = [];
+          for (const [field, errs] of Object.entries(data.fieldErrors as Record<string, string[]>)) {
+            const label = this.t(`field.${field}`) !== `field.${field}` ? this.t(`field.${field}`) : field;
+            lines.push(`• ${label}: ${(errs as string[]).join(", ")}`);
+          }
+          this.clubInfoError = lines.join("\n");
+        } else {
+          this.clubInfoError = await res.text().then(t=>t.slice(0,300)).catch(()=> "Save failed");
+        }
+        return;
+      }
       this.clubInfoSuccess = this.t("admin.club.saved");
+      const savedUrl = url;
+      await this.loadAdminClubInfo();
+      // loadAdminClubInfo may reset to fallback if empty — preserve the just-saved url
+      if (savedUrl) this.clubForm.public_url = savedUrl;
       await this.loadClubInfo();
+      setTimeout(() => { this.clubInfoSuccess = ""; }, 3000);
     },
 
     async loadReports() {

@@ -217,5 +217,7 @@
   "admin.timetable.orphanError": "El cambio de horario dejaría reservas huérfanas",
   "admin.timetable.forceHint": "Cancela o mueve primero las reservas en conflicto",
   "admin.notifications.notifyOnApproval": "Notificar al usuario al aprobar",
-  "admin.notifications.notifyOnRejection": "Notificar al usuario al rechazar"
+  "admin.notifications.notifyOnRejection": "Notificar al usuario al rechazar",
+  "field.public_url": "URL pública",
+  "validation.url": "URL inválida (usa https://...)"
 }

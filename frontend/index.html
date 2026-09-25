@@ -606,12 +606,12 @@
    </div>
    </section>
 
-  <section x-show="view==='admin-club'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
-  <h2 class="text-xl font-bold" x-text="t('admin.club.title')"></h2>
-  <p class="text-sm text-zinc-500" x-text="t('admin.club.desc')"></p>
-  <p x-show="clubInfoLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
-  <p x-show="clubInfoError" class="text-sm text-red-600" x-text="clubInfoError"></p>
-  <p x-show="clubInfoSuccess" class="text-sm text-emerald-600" x-text="clubInfoSuccess"></p>
+   <section x-show="view==='admin-club'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+   <h2 class="text-xl font-bold" x-text="t('admin.club.title')"></h2>
+   <p class="text-sm text-zinc-500" x-text="t('admin.club.desc')"></p>
+   <p x-show="clubInfoLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
+   <div x-show="clubInfoError" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" x-text="clubInfoError"></div>
+   <div x-show="clubInfoSuccess" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800" x-text="clubInfoSuccess"></div>
   <div class="space-y-3">
   <input x-model="clubForm.club_name" :placeholder="t('admin.club.name')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <input x-model="clubForm.club_phone" :placeholder="t('admin.club.phone')" class="w-full rounded-lg border px-3 py-2 text-sm" />

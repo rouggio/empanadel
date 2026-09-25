@@ -14,7 +14,8 @@
 ## 2. Git & Deploy — CRITICAL HABIT
 - **Remote**: `origin git@github.com:rouggio/empanadel.git` `push.autoSetupRemote=true` branch `main`.
 - **Commits**: inspect `git status`, `git diff`, `git log --oneline -10` before committing; stage only intended files; never commit secrets; concise commit message matching repo style.
-- **Push → MANUAL REDEPLOY REQUIRED**: Render `autoDeploy` is **OFF** for this repo. After every `git push` you **MUST** call the deploy hook:
+- **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, or `deploy` you may `git push` + `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`. All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
+- **When deploy IS requested**: Render `autoDeploy` is **OFF**. After `git push` you **MUST** call the deploy hook:
   ```
   POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0
   ```

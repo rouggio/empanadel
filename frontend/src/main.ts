@@ -471,7 +471,7 @@ function app() {
           courtNumber: r.courtNumber,
           courtType: r.courtType,
           courtName: r.courtName,
-        })).sort((a,b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)));
+        })).sort((a,b) => (a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date)));
       } catch (e: any) {
         this.bookingsError = e.message || String(e);
       } finally { this.bookingsLoading = false; }

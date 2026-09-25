@@ -840,7 +840,7 @@ function app() {
 
     async createAdminUser() {
       this.adminUsersError = ""; this.adminUserSuccess = "";
-      if (!this.adminUserForm.username || !this.adminUserForm.email || !this.adminUserForm.password || !this.adminUserForm.first_name || !this.adminUserForm.last_name) { this.adminUsersError = "Username, email, password, first/last name required"; return; }
+      if (!this.adminUserForm.username || !this.adminUserForm.password || !this.adminUserForm.first_name || !this.adminUserForm.last_name) { this.adminUsersError = "Username, password, first/last name required (email optional)"; return; }
       const token = localStorage.getItem("token");
       const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ username: this.adminUserForm.username, email: this.adminUserForm.email, password: this.adminUserForm.password, first_name: this.adminUserForm.first_name, last_name: this.adminUserForm.last_name, role: this.adminUserForm.role, preferred_language: "it" }) });
       if (!res.ok) { this.adminUsersError = await res.text(); return; }
@@ -947,7 +947,7 @@ function app() {
       const token = localStorage.getItem("token");
       const payload: any = {};
       if (this.profileForm.username) payload.username = this.profileForm.username;
-      if (this.profileForm.email) payload.email = this.profileForm.email;
+      payload.email = this.profileForm.email ? this.profileForm.email : null;
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
       if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;

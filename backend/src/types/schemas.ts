@@ -3,7 +3,7 @@ import { z } from "zod";
 export const preferredLanguageSchema = z.enum(["it", "en", "fr", "de", "es"]);
 export const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/),
-  email: z.string().email().toLowerCase(),
+  email: z.preprocess((v) => (v === "" || v === undefined ? null : v), z.string().email().toLowerCase().nullable().optional()),
   password: z.string().min(8).max(128),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
@@ -64,7 +64,7 @@ export const blockingRuleSchema = z.object({
 
 export const profileSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/).optional(),
-  email: z.string().email().optional(),
+  email: z.preprocess((v) => (v === "" ? null : v), z.string().email().nullable().optional()),
   preferred_language: preferredLanguageSchema.optional(),
   preferred_sport: z.enum(["tennis", "padel"]).optional().nullable(),
   mobile: z.string().max(20).optional().nullable(),

@@ -174,7 +174,7 @@
  <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
  </div>
  <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
- <input x-model="regForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.email" :placeholder="t('auth.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
@@ -251,7 +251,7 @@
  <p x-show="profileSuccess" class="text-sm text-emerald-600" x-text="profileSuccess"></p>
  <div class="space-y-3">
  <input x-model="profileForm.username" :placeholder="t('profile.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
- <input x-model="profileForm.email" :placeholder="t('profile.email')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="profileForm.email" :placeholder="t('profile.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <div class="grid grid-cols-2 gap-2">
  <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
@@ -355,7 +355,7 @@
   <div @click="viewUser(u)" class="flex items-center justify-between rounded border px-3 py-2 text-sm cursor-pointer hover:bg-zinc-50">
   <div>
   <div class="font-medium" x-text="`${u.username} (${u.first_name} ${u.last_name})`"></div>
-  <div class="text-xs text-zinc-500" x-text="`${u.email} · ${u.role} · ${u.mobile || ''}`"></div>
+   <div class="text-xs text-zinc-500" x-text="`${u.email ? u.email + ' · ' : ''}${u.role}${u.mobile ? ' · ' + u.mobile : ''}`"></div>
   </div>
   <div class="flex items-center gap-2">
    <span class="rounded px-2 py-1 text-xs" :class="u.role==='admin' ? 'bg-red-100 text-red-700' : u.role==='associate' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100'" x-text="u.role"></span>
@@ -378,7 +378,7 @@
  <p x-show="adminUserSuccess" class="text-xs text-emerald-600" x-text="adminUserSuccess"></p>
  <!-- Reuses same registration form fields -->
  <input x-model="adminUserForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
- <input x-model="adminUserForm.email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="adminUserForm.email" :placeholder="t('auth.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <div class="grid grid-cols-2 gap-2">
  <input x-model="adminUserForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="adminUserForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />

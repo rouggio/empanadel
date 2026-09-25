@@ -20,11 +20,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
 
     try {
+      const emailVal = (data.email as string | null | undefined)?.toLowerCase?.() ?? null;
+      if (emailVal) {
+        const dup = await db.select().from(users).where(eq(users.email, emailVal)).limit(1);
+        if (dup[0]) return reply.status(409).send({ error: "username or email already taken" });
+      }
       const [user] = await db
         .insert(users)
         .values({
           username: data.username,
-          email: data.email,
+          email: emailVal,
           passwordHash,
           firstName: data.first_name,
           lastName: data.last_name,

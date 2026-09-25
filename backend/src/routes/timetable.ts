@@ -48,7 +48,7 @@ export default async function timetableRoutes(fastify: FastifyInstance) {
           // duration change is tolerated — existing bookings keep their endTime, just warn if not aligned? not blocking
         }
         if (conflicts.length) {
-          return reply.status(409).send({ error: "Timetable change would orphan live bookings", conflicts, dayOfWeek: entry.day_of_week, courtId, hint: "Use ?force=true to override or cancel/move conflicting bookings first" });
+          return reply.status(409).send({ error: "Timetable change would orphan live bookings", conflicts, dayOfWeek: entry.day_of_week, courtId });
         }
       }
     }

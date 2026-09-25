@@ -714,7 +714,16 @@ function app() {
         if (!res.ok) {
           const txt = await res.text();
           let msg = txt;
-          try { const j = JSON.parse(txt); if (j.conflicts) msg = `${j.error}: ${j.conflicts.map((c:any)=>`${c.date} ${c.startTime}-${c.endTime} ${c.reason}`).join("; ")}`; if (!force) msg += " — " + this.t('admin.timetable.forceHint'); } catch {}
+          try {
+            const j = JSON.parse(txt);
+            if (j.conflicts) {
+              const base = this.t('admin.timetable.orphanError');
+              msg = `${base}: ${j.conflicts.map((c:any)=>`${c.date} ${c.startTime}-${c.endTime} ${c.reason}`).join("; ")}`;
+              if (!force) msg += " — " + this.t('admin.timetable.forceHint');
+            } else {
+              msg = j.error || txt;
+            }
+          } catch {}
           throw new Error(msg);
         }
         this.adminTimetableSuccess = this.t('admin.timetable.saved');

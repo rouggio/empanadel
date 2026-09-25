@@ -209,9 +209,11 @@
   "myBookings.last3Months": "últimos 3 meses",
   "myBookings.last6Months": "últimos 6 meses",
   "admin.timetable.title": "Horario de pistas",
-  "admin.timetable.desc": "Define apertura, cierre y duración de franja para cada día para la pista seleccionada. Usa GET/PUT /api/timetable.",
+  "admin.timetable.desc": "Define apertura, cierre y duración de franja para cada día para la pista seleccionada.",
   "admin.timetable.court": "Pista",
   "admin.timetable.closed": "Cerrado",
   "admin.timetable.save": "Guardar horario",
-  "admin.timetable.saved": "Horario guardado"
+  "admin.timetable.saved": "Horario guardado",
+  "admin.timetable.orphanError": "El cambio de horario dejaría reservas huérfanas",
+  "admin.timetable.forceHint": "Cancela o mueve primero las reservas en conflicto"
 }

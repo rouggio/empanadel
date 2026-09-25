@@ -209,9 +209,11 @@
   "myBookings.last3Months": "ultimi 3 mesi",
   "myBookings.last6Months": "ultimi 6 mesi",
   "admin.timetable.title": "Orari campi",
-  "admin.timetable.desc": "Definisci apertura, chiusura e durata slot per ogni giorno della settimana per il campo selezionato. Usa le API esistenti GET/PUT /api/timetable.",
+  "admin.timetable.desc": "Definisci apertura, chiusura e durata slot per ogni giorno della settimana per il campo selezionato.",
   "admin.timetable.court": "Campo",
   "admin.timetable.closed": "Chiuso",
   "admin.timetable.save": "Salva orari",
-  "admin.timetable.saved": "Orari salvati"
+  "admin.timetable.saved": "Orari salvati",
+  "admin.timetable.orphanError": "La modifica dell’orario creerebbe prenotazioni orfane",
+  "admin.timetable.forceHint": "Annulla o sposta prima le prenotazioni in conflitto"
 }

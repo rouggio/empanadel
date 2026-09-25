@@ -87,6 +87,8 @@ export const settingsSchema = z.object({
   public_url: z.string().url().max(255).optional().nullable().or(z.literal("")),
   notifications_enabled: z.boolean().optional(),
   notify_on_auto_approved: z.boolean().optional(),
+  notify_on_approval: z.boolean().optional(),
+  notify_on_rejection: z.boolean().optional(),
   notify_via_telegram: z.boolean().optional(),
   notify_via_whatsapp: z.boolean().optional(),
   telegram_bot_token: z.string().max(500).optional().nullable(),

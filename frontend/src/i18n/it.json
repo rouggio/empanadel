@@ -203,8 +203,8 @@
   "admin.club.publicUrlHint": "Usato per i link di notifica (Telegram/WhatsApp) — deve essere l'URL di produzione.",
   "admin.notifications.nav": "Notifiche",
   "admin.notifications.notifyOnAutoApproved": "Avvisa anche per prenotazioni auto-approvate",
-  "admin.notifications.viaTelegram": "Ricevi notifiche su Telegram",
-  "admin.notifications.viaWhatsapp": "Ricevi notifiche su WhatsApp",
+  "admin.notifications.viaTelegram": "Admin: Ricevi notifiche su Telegram",
+  "admin.notifications.viaWhatsapp": "Admin: Ricevi notifiche su WhatsApp",
   "myBookings.lastMonth": "ultimo mese",
   "myBookings.last3Months": "ultimi 3 mesi",
   "myBookings.last6Months": "ultimi 6 mesi",
@@ -215,5 +215,7 @@
   "admin.timetable.save": "Salva orari",
   "admin.timetable.saved": "Orari salvati",
   "admin.timetable.orphanError": "La modifica dell’orario creerebbe prenotazioni orfane",
-  "admin.timetable.forceHint": "Annulla o sposta prima le prenotazioni in conflitto"
+  "admin.timetable.forceHint": "Annulla o sposta prima le prenotazioni in conflitto",
+  "admin.notifications.notifyOnApproval": "Avvisa utente all'approvazione",
+  "admin.notifications.notifyOnRejection": "Avvisa utente al rifiuto"
 }

@@ -252,6 +252,8 @@ export async function notifyUserBookingDecision(db: Db, booking: any, decision: 
   try {
     const settings = await getNotificationSettings(db);
     if (!settings || !settings.notificationsEnabled) return;
+    if (decision === "approved" && (settings as any).notifyOnApproval === false) return;
+    if (decision === "rejected" && (settings as any).notifyOnRejection === false) return;
     const viaTelegram = (settings as any).notifyViaTelegram ?? true;
     const viaWhatsapp = (settings as any).notifyViaWhatsapp ?? true;
     const clubName = settings.clubName || "Empanadel";
@@ -305,6 +307,8 @@ export function maskSettingsForAdminResponse(s: any) {
     public_url: s.publicUrl || "https://empanadel.onrender.com",
     notifications_enabled: s.notificationsEnabled,
     notify_on_auto_approved: s.notifyOnAutoApproved ?? false,
+    notify_on_approval: s.notifyOnApproval ?? true,
+    notify_on_rejection: s.notifyOnRejection ?? true,
     notify_via_telegram: s.notifyViaTelegram ?? true,
     notify_via_whatsapp: s.notifyViaWhatsapp ?? true,
     telegram_bot_token: s.telegramBotToken ? maskToken(s.telegramBotToken) : null,

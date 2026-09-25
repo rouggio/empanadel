@@ -203,8 +203,8 @@
   "admin.club.publicUrlHint": "Für Benachrichtigungslinks verwendet (Telegram/WhatsApp) — muss die Produktions-URL sein.",
   "admin.notifications.nav": "Benachrichtigungen",
   "admin.notifications.notifyOnAutoApproved": "Auch bei automatisch genehmigten Buchungen benachrichtigen",
-  "admin.notifications.viaTelegram": "Benachrichtigungen via Telegram erhalten",
-  "admin.notifications.viaWhatsapp": "Benachrichtigungen via WhatsApp erhalten",
+  "admin.notifications.viaTelegram": "Admin: Benachrichtigungen via Telegram erhalten",
+  "admin.notifications.viaWhatsapp": "Admin: Benachrichtigungen via WhatsApp erhalten",
   "myBookings.lastMonth": "letzter Monat",
   "myBookings.last3Months": "letzte 3 Monate",
   "myBookings.last6Months": "letzte 6 Monate",
@@ -215,5 +215,7 @@
   "admin.timetable.save": "Zeitplan speichern",
   "admin.timetable.saved": "Zeitplan gespeichert",
   "admin.timetable.orphanError": "Zeitplanänderung würde Live-Buchungen verwaissen",
-  "admin.timetable.forceHint": "Bitte stornieren oder verschieben Sie zuerst die konfligierenden Buchungen"
+  "admin.timetable.forceHint": "Bitte stornieren oder verschieben Sie zuerst die konfligierenden Buchungen",
+  "admin.notifications.notifyOnApproval": "Nutzer bei Genehmigung benachrichtigen",
+  "admin.notifications.notifyOnRejection": "Nutzer bei Ablehnung benachrichtigen"
 }

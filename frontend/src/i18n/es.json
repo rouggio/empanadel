@@ -203,8 +203,8 @@
   "admin.club.publicUrlHint": "Usado para enlaces de notificación (Telegram/WhatsApp) — debe ser la URL de producción.",
   "admin.notifications.nav": "Notificaciones",
   "admin.notifications.notifyOnAutoApproved": "Notificar también para reservas auto-aprobadas",
-  "admin.notifications.viaTelegram": "Recibir notificaciones vía Telegram",
-  "admin.notifications.viaWhatsapp": "Recibir notificaciones vía WhatsApp",
+  "admin.notifications.viaTelegram": "Admin: Recibir notificaciones vía Telegram",
+  "admin.notifications.viaWhatsapp": "Admin: Recibir notificaciones vía WhatsApp",
   "myBookings.lastMonth": "último mes",
   "myBookings.last3Months": "últimos 3 meses",
   "myBookings.last6Months": "últimos 6 meses",
@@ -215,5 +215,7 @@
   "admin.timetable.save": "Guardar horario",
   "admin.timetable.saved": "Horario guardado",
   "admin.timetable.orphanError": "El cambio de horario dejaría reservas huérfanas",
-  "admin.timetable.forceHint": "Cancela o mueve primero las reservas en conflicto"
+  "admin.timetable.forceHint": "Cancela o mueve primero las reservas en conflicto",
+  "admin.notifications.notifyOnApproval": "Notificar al usuario al aprobar",
+  "admin.notifications.notifyOnRejection": "Notificar al usuario al rechazar"
 }

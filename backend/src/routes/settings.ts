@@ -34,13 +34,15 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         public_url: "https://empanadel.onrender.com",
         notifications_enabled: false,
         notify_on_auto_approved: false,
+        notify_on_approval: true,
+        notify_on_rejection: true,
         notify_via_telegram: true,
         notify_via_whatsapp: true,
       });
     }
     const rows = await db.select().from(appSettings).where(eq(appSettings.id, 1));
     const s = rows[0];
-    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false, club_name: "Green Village", club_phone: "3923047417", club_address: "", public_url: "https://empanadel.onrender.com", notifications_enabled: false, notify_on_auto_approved: false, notify_via_telegram: true, notify_via_whatsapp: true });
+    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false, club_name: "Green Village", club_phone: "3923047417", club_address: "", public_url: "https://empanadel.onrender.com", notifications_enabled: false, notify_on_auto_approved: false, notify_on_approval: true, notify_on_rejection: true, notify_via_telegram: true, notify_via_whatsapp: true });
     return reply.send(maskSettingsForAdminResponse(s));
   });
 
@@ -61,6 +63,8 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
     if (parsed.data.public_url !== undefined) updates.publicUrl = parsed.data.public_url ? parsed.data.public_url.replace(/\/$/, "") : null;
     if (parsed.data.notifications_enabled !== undefined) updates.notificationsEnabled = parsed.data.notifications_enabled;
     if (parsed.data.notify_on_auto_approved !== undefined) updates.notifyOnAutoApproved = parsed.data.notify_on_auto_approved;
+    if (parsed.data.notify_on_approval !== undefined) updates.notifyOnApproval = parsed.data.notify_on_approval;
+    if (parsed.data.notify_on_rejection !== undefined) updates.notifyOnRejection = parsed.data.notify_on_rejection;
     if (parsed.data.notify_via_telegram !== undefined) updates.notifyViaTelegram = parsed.data.notify_via_telegram;
     if (parsed.data.notify_via_whatsapp !== undefined) updates.notifyViaWhatsapp = parsed.data.notify_via_whatsapp;
     // Tokens: if masked value (contains ***) or same as present, ignore to avoid overwriting with masked placeholder

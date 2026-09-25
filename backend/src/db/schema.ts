@@ -124,6 +124,8 @@ export const appSettings = pgTable("app_settings", {
   publicUrl: varchar("public_url", { length: 255 }),
   notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
   notifyOnAutoApproved: boolean("notify_on_auto_approved").notNull().default(false),
+  notifyOnApproval: boolean("notify_on_approval").notNull().default(true),
+  notifyOnRejection: boolean("notify_on_rejection").notNull().default(true),
   notifyViaTelegram: boolean("notify_via_telegram").notNull().default(true),
   notifyViaWhatsapp: boolean("notify_via_whatsapp").notNull().default(true),
   telegramBotToken: text("telegram_bot_token"),

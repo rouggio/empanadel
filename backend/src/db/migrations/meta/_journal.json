@@ -71,6 +71,13 @@
       "when": 1790400002000,
       "tag": "0009_make_email_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790400003000,
+      "tag": "0010_telegram_link_tokens",
+      "breakpoints": true
     }
   ]
 }

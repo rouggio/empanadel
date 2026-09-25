@@ -139,3 +139,10 @@ export const auditLog = pgTable("audit_log", {
   meta: text("meta"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const telegramLinkTokens = pgTable("telegram_link_tokens", {
+  token: varchar("token", { length: 64 }).primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

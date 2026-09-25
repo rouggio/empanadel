@@ -257,8 +257,13 @@
  <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  </div>
   <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <input x-model="profileForm.telegram_chat_id" placeholder="Telegram chat ID" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <p class="text-[11px] text-zinc-500">Get your chat ID by messaging your bot and checking getUpdates. Leave empty if you only use WhatsApp.</p>
+  <div class="rounded-lg border p-3 space-y-2 bg-zinc-50">
+  <div class="flex items-center justify-between text-sm"><span class="font-medium">Telegram</span><span class="text-xs" :class="telegramLinked ? 'text-emerald-600' : 'text-zinc-500'" x-text="telegramLinked ? '✅ Connected' : 'Not connected'"></span></div>
+  <button x-show="!telegramLinked" @click="createTelegramLink()" :disabled="telegramLinkLoading" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 py-2 text-xs font-medium" x-text="telegramLinkLoading ? 'Linking...' : 'Connect Telegram'"></button>
+  <button x-show="telegramLinked" @click="unlinkTelegram()" class="w-full rounded-lg border bg-white py-2 text-xs">Disconnect Telegram</button>
+  <p x-show="telegramLinkUrl" class="text-xs break-all"><a :href="telegramLinkUrl" target="_blank" class="underline text-emerald-700" x-text="telegramLinkUrl"></a></p>
+  <p class="text-[11px] text-zinc-500">Tap Connect to open Telegram — approve/reject notifications will arrive there. WhatsApp uses your mobile instead.</p>
+  </div>
   <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
  <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
  <option value="male" x-text="t('profile.gender.male')"></option>

@@ -68,6 +68,10 @@ function app() {
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
+    telegramLinked: false as boolean,
+    telegramLinkUrl: "" as string,
+    telegramLinkLoading: false as boolean,
+    telegramPollTimer: null as number | null,
     editingBooking: null as string | null,
     editNotes: "" as string,
     editRent: 0 as number,
@@ -938,6 +942,7 @@ function app() {
           preferred_sport: me.preferred_sport || me.preferredSport || "",
         };
         this.user = me;
+        await this.checkTelegramStatus();
       } catch (e: any) { this.profileError = e.message || String(e); }
       finally { this.profileLoading = false; }
     },
@@ -951,7 +956,6 @@ function app() {
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
       if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;
-      if (this.profileForm.telegram_chat_id !== undefined) payload.telegram_chat_id = this.profileForm.telegram_chat_id || null;
       if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
       if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
       if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;
@@ -966,6 +970,47 @@ function app() {
         if (this.view === "courts") this.loadAvailability();
       }
       this.user = { ...this.user, ...updated };
+      await this.checkTelegramStatus();
+    },
+    async checkTelegramStatus() {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) { this.telegramLinked = false; return; }
+        const res = await fetch("/api/telegram/status", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const j = await res.json();
+          this.telegramLinked = !!j.linked;
+        }
+      } catch { this.telegramLinked = false; }
+    },
+    async createTelegramLink() {
+      this.telegramLinkLoading = true;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/telegram/link", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const j = await res.json();
+        this.telegramLinkUrl = j.url;
+        window.open(j.url, "_blank");
+        // poll status every 3s for 2 minutes
+        if (this.telegramPollTimer) clearInterval(this.telegramPollTimer);
+        let attempts = 0;
+        this.telegramPollTimer = window.setInterval(async () => {
+          attempts++;
+          await this.checkTelegramStatus();
+          if (this.telegramLinked || attempts > 40) {
+            if (this.telegramPollTimer) clearInterval(this.telegramPollTimer);
+            this.telegramPollTimer = null;
+            if (this.telegramLinked) this.telegramLinkUrl = "";
+          }
+        }, 3000);
+      } catch (e: any) { this.profileError = e.message || String(e); }
+      finally { this.telegramLinkLoading = false; }
+    },
+    async unlinkTelegram() {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/telegram/unlink", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { this.telegramLinked = false; this.telegramLinkUrl = ""; }
     },
 
     startEditBooking(b: any) {

@@ -595,7 +595,7 @@
      <div @click="selectSlice(row)" class="flex-1 flex flex-col items-center gap-1 min-w-[28px] cursor-pointer hover:opacity-80" :class="(reportsSliceData ? row.label===reportsSelectedLabel : row.startDate===reportsData.startDate) ? 'ring-1 ring-zinc-900 rounded' : ''">
      <span class="text-xs font-mono" x-text="row.count"></span>
      <div class="w-full bg-zinc-100 rounded-t overflow-hidden flex items-end" style="height: 120px">
-     <div class="w-full rounded-t" :class="(reportsSliceData ? row.label===reportsSelectedLabel : row.startDate===reportsData.startDate) ? 'bg-emerald-600' : 'bg-emerald-300'" :style="`height: ${Math.max(8, (row.count / Math.max(...reportsData.timeline.map(r=>r.count),1))*100)}%`"></div>
+     <div class="w-full rounded-t" :class="(reportsSliceData ? row.label===reportsSelectedLabel : row.startDate===reportsData.startDate) ? 'bg-emerald-600' : 'bg-emerald-300'" :style="`height: ${row.count===0 ? 0 : Math.max(8, (row.count / Math.max(...reportsData.timeline.map(r=>r.count),1))*100)}%`"></div>
      </div>
      <span class="text-[10px] truncate w-full text-center" x-text="row.label"></span>
      </div>

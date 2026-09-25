@@ -681,9 +681,9 @@
   <h2 class="text-xl font-bold" x-text="t('admin.notifications.title')"></h2>
   <p class="text-xs text-zinc-500" x-text="t('admin.notifications.desc')"></p>
   <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.enable')"></span></label>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_on_auto_approved" /> <span x-text="t('admin.notifications.notifyOnAutoApproved')"></span></label>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_via_telegram" /> <span x-text="t('admin.notifications.viaTelegram')"></span></label>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_via_whatsapp" /> <span x-text="t('admin.notifications.viaWhatsapp')"></span></label>
+  <label class="flex items-center gap-2 text-sm" :class="!notificationForm.notifications_enabled ? 'opacity-50' : ''"><input type="checkbox" x-model="notificationForm.notify_on_auto_approved" :disabled="!notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.notifyOnAutoApproved')"></span></label>
+  <label class="flex items-center gap-2 text-sm" :class="!notificationForm.notifications_enabled ? 'opacity-50' : ''"><input type="checkbox" x-model="notificationForm.notify_via_telegram" :disabled="!notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.viaTelegram')"></span></label>
+  <label class="flex items-center gap-2 text-sm" :class="!notificationForm.notifications_enabled ? 'opacity-50' : ''"><input type="checkbox" x-model="notificationForm.notify_via_whatsapp" :disabled="!notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.viaWhatsapp')"></span></label>
   <div class="space-y-3 border-t pt-4">
   <h3 class="font-semibold text-sm" x-text="t('admin.notifications.telegram.title')"></h3>
   <p class="text-xs text-zinc-500" x-text="t('admin.notifications.telegram.desc')"></p>
@@ -702,7 +702,7 @@
   <p class="text-xs text-zinc-500" x-text="t('admin.notifications.whatsapp.usersHint')"></p>
   <button @click="testNotification('whatsapp')" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('admin.notifications.whatsapp.test')"></button>
   </div>
-  <button @click="saveNotificationSettings()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium">Save notifications</button>
+  <button @click="saveNotificationSettings()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.notifications.save')"></button>
   <pre x-show="notificationTestResult" class="text-xs bg-zinc-50 border rounded p-2 whitespace-pre-wrap break-all" x-text="notificationTestResult"></pre>
   </section>
    </main>

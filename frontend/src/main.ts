@@ -696,7 +696,7 @@ function app() {
       } catch (e: any) { this.adminTimetableError = e.message || String(e); }
       finally { this.adminTimetableLoading = false; }
     },
-    async saveAdminTimetable() {
+    async saveAdminTimetable(force = false) {
       if (!this.adminTimetableCourtId) return;
       this.adminTimetableLoading = true; this.adminTimetableError = ""; this.adminTimetableSuccess = "";
       try {
@@ -709,8 +709,14 @@ function app() {
           slot_duration_minutes: r.slotDurationMinutes,
           is_closed: r.isClosed,
         }));
-        const res = await fetch("/api/timetable", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error(await res.text());
+        const url = force ? "/api/timetable?force=true" : "/api/timetable";
+        const res = await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+        if (!res.ok) {
+          const txt = await res.text();
+          let msg = txt;
+          try { const j = JSON.parse(txt); if (j.conflicts) msg = `${j.error}: ${j.conflicts.map((c:any)=>`${c.date} ${c.startTime}-${c.endTime} ${c.reason}`).join("; ")}`; if (!force) msg += " — " + this.t('admin.timetable.forceHint'); } catch {}
+          throw new Error(msg);
+        }
         this.adminTimetableSuccess = this.t('admin.timetable.saved');
         await this.loadAvailability();
       } catch (e: any) { this.adminTimetableError = e.message || String(e); }

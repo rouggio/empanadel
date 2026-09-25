@@ -202,7 +202,7 @@
   "admin.club.publicUrlPlaceholder": "URL pubblico es. https://empanadel.onrender.com",
   "admin.club.publicUrlHint": "Usato per i link di notifica (Telegram/WhatsApp) — deve essere l'URL di produzione.",
   "admin.notifications.nav": "Notifiche",
-  "admin.notifications.notifyOnAutoApproved": "Avvisa anche per prenotazioni auto-approvate",
+  "admin.notifications.notifyOnAutoApproved": "Avvisa utente per prenotazioni auto-approvate",
   "admin.notifications.viaTelegram": "Admin: Ricevi notifiche su Telegram",
   "admin.notifications.viaWhatsapp": "Admin: Ricevi notifiche su WhatsApp",
   "myBookings.lastMonth": "ultimo mese",

@@ -219,5 +219,11 @@
   "admin.notifications.notifyOnApproval": "Notify user on approval",
   "admin.notifications.notifyOnRejection": "Notify user on rejection",
   "field.public_url": "Public URL",
-  "validation.url": "Invalid URL (use https://...)"
+  "validation.url": "Invalid URL (use https://...)",
+  "confirm.cancelBooking": "Cancel this booking?",
+  "confirm.rejectBooking": "Reject this booking?",
+  "confirm.disableCourt": "Disable this court? It will be hidden from booking but keep history.",
+  "confirm.deleteBlock": "Delete this spot block?",
+  "confirm.deleteRecurring": "Delete this recurring block?",
+  "confirm.deleteUser": "Delete this user? This cannot be undone."
 }

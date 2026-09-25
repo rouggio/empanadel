@@ -219,5 +219,11 @@
   "admin.notifications.notifyOnApproval": "Notificar al usuario al aprobar",
   "admin.notifications.notifyOnRejection": "Notificar al usuario al rechazar",
   "field.public_url": "URL pública",
-  "validation.url": "URL inválida (usa https://...)"
+  "validation.url": "URL inválida (usa https://...)",
+  "confirm.cancelBooking": "¿Cancelar esta reserva?",
+  "confirm.rejectBooking": "¿Rechazar esta reserva?",
+  "confirm.disableCourt": "¿Deshabilitar esta pista? Se ocultará de las reservas pero mantendrá el historial.",
+  "confirm.deleteBlock": "¿Eliminar este bloqueo puntual?",
+  "confirm.deleteRecurring": "¿Eliminar este bloqueo recurrente?",
+  "confirm.deleteUser": "¿Eliminar este usuario? Esta acción no se puede deshacer."
 }

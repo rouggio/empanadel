@@ -219,5 +219,11 @@
   "admin.notifications.notifyOnApproval": "Nutzer bei Genehmigung benachrichtigen",
   "admin.notifications.notifyOnRejection": "Nutzer bei Ablehnung benachrichtigen",
   "field.public_url": "Öffentliche URL",
-  "validation.url": "Ungültige URL (nutze https://...)"
+  "validation.url": "Ungültige URL (nutze https://...)",
+  "confirm.cancelBooking": "Diese Buchung stornieren?",
+  "confirm.rejectBooking": "Diese Buchung ablehnen?",
+  "confirm.disableCourt": "Diesen Platz deaktivieren? Er wird für Buchungen ausgeblendet, behält aber den Verlauf.",
+  "confirm.deleteBlock": "Diesen Einzelblock löschen?",
+  "confirm.deleteRecurring": "Diesen wiederkehrenden Block löschen?",
+  "confirm.deleteUser": "Diesen Benutzer löschen? Dies kann nicht rückgängig gemacht werden."
 }

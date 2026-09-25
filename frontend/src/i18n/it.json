@@ -219,5 +219,11 @@
   "admin.notifications.notifyOnApproval": "Avvisa utente all'approvazione",
   "admin.notifications.notifyOnRejection": "Avvisa utente al rifiuto",
   "field.public_url": "URL pubblico",
-  "validation.url": "URL non valido (usa https://...)"
+  "validation.url": "URL non valido (usa https://...)",
+  "confirm.cancelBooking": "Cancellare questa prenotazione?",
+  "confirm.rejectBooking": "Rifiutare questa prenotazione?",
+  "confirm.disableCourt": "Disabilitare questo campo? Sarà nascosto dalle prenotazioni ma manterrà lo storico.",
+  "confirm.deleteBlock": "Eliminare questo blocco singolo?",
+  "confirm.deleteRecurring": "Eliminare questo blocco ricorrente?",
+  "confirm.deleteUser": "Eliminare questo utente? Azione irreversibile."
 }

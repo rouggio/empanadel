@@ -219,5 +219,11 @@
   "admin.notifications.notifyOnApproval": "Notifier l'utilisateur en cas d'approbation",
   "admin.notifications.notifyOnRejection": "Notifier l'utilisateur en cas de rejet",
   "field.public_url": "URL publique",
-  "validation.url": "URL invalide (utilisez https://...)"
+  "validation.url": "URL invalide (utilisez https://...)",
+  "confirm.cancelBooking": "Annuler cette réservation ?",
+  "confirm.rejectBooking": "Rejeter cette réservation ?",
+  "confirm.disableCourt": "Désactiver ce terrain ? Il sera masqué des réservations mais conservera l historique.",
+  "confirm.deleteBlock": "Supprimer ce bloc ponctuel ?",
+  "confirm.deleteRecurring": "Supprimer ce bloc récurrent ?",
+  "confirm.deleteUser": "Supprimer cet utilisateur ? Action irréversible."
 }

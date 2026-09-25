@@ -485,7 +485,7 @@ function app() {
     },
 
     async cancelBooking(id: string) {
-      if (!confirm("Cancel this booking?")) return;
+      if (!confirm(this.t("confirm.cancelBooking"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/bookings/${id}/cancel`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Cancel failed: " + await res.text()); return; }
@@ -527,7 +527,7 @@ function app() {
     },
 
     async rejectBooking(id: string) {
-      if (!confirm("Reject this booking?")) return;
+      if (!confirm(this.t("confirm.rejectBooking"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/bookings/${id}/reject`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Reject failed: " + await res.text()); return; }
@@ -795,7 +795,7 @@ function app() {
     },
 
     async deleteCourt(id: string) {
-      if (!confirm("Disable this court? It will be hidden from booking but keep history.")) return;
+      if (!confirm(this.t("confirm.disableCourt"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/courts/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
@@ -922,7 +922,7 @@ function app() {
       await this.loadAdminBlocks(); await this.loadAvailability();
     },
     async deleteBlock(id: string) {
-      if (!confirm("Delete this spot block?")) return;
+      if (!confirm(this.t("confirm.deleteBlock"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/blocks/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
@@ -930,7 +930,7 @@ function app() {
     },
 
     async deleteLesson(id: string) {
-      if (!confirm("Delete this recurring block?")) return;
+      if (!confirm(this.t("confirm.deleteRecurring"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/blocking-rules/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
@@ -991,7 +991,7 @@ function app() {
     },
 
     async deleteAdminUser(id: string) {
-      if (!confirm("Delete this user? This cannot be undone.")) return;
+      if (!confirm(this.t("confirm.deleteUser"))) return;
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/users/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { alert("Delete failed: " + await res.text()); return; }

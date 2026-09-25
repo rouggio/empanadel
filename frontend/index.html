@@ -22,7 +22,7 @@
   <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
   <a href="#admin-club" class="hover:text-black" x-text="t('admin.club.title')"></a>
   <a href="#admin-reports" class="hover:text-black" x-text="t('admin.reports.title')"></a>
-  <a href="#admin-notifications" class="hover:text-black">Notifications</a>
+  <a href="#admin-notifications" class="hover:text-black" x-text="t('admin.notifications.nav')"></a>
   </div>
   </template>
    </nav>
@@ -36,7 +36,7 @@
     <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
     <a href="#admin-club" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.club.title')"></a>
     <a href="#admin-reports" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.reports.title')"></a>
-    <a href="#admin-notifications" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50">Notifications</a>
+    <a href="#admin-notifications" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.notifications.nav')"></a>
    </div>
    </div>
   <div class="flex items-center gap-2">
@@ -174,7 +174,7 @@
  <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
  </div>
  <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
-  <input x-model="regForm.email" :placeholder="t('auth.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.email" :placeholder="t('auth.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
@@ -251,18 +251,18 @@
  <p x-show="profileSuccess" class="text-sm text-emerald-600" x-text="profileSuccess"></p>
  <div class="space-y-3">
  <input x-model="profileForm.username" :placeholder="t('profile.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <input x-model="profileForm.email" :placeholder="t('profile.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="profileForm.email" :placeholder="t('profile.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <div class="grid grid-cols-2 gap-2">
  <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  </div>
   <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <div class="rounded-lg border p-3 space-y-2 bg-zinc-50">
-  <div class="flex items-center justify-between text-sm"><span class="font-medium">Telegram</span><span class="text-xs" :class="telegramLinked ? 'text-emerald-600' : 'text-zinc-500'" x-text="telegramLinked ? '✅ Connected' : 'Not connected'"></span></div>
-  <button x-show="!telegramLinked" @click="createTelegramLink()" :disabled="telegramLinkLoading" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 py-2 text-xs font-medium" x-text="telegramLinkLoading ? 'Linking...' : 'Connect Telegram'"></button>
-  <button x-show="telegramLinked" @click="unlinkTelegram()" class="w-full rounded-lg border bg-white py-2 text-xs">Disconnect Telegram</button>
+  <div class="flex items-center justify-between text-sm"><span class="font-medium" x-text="t('telegram.title')"></span><span class="text-xs" :class="telegramLinked ? 'text-emerald-600' : 'text-zinc-500'" x-text="telegramLinked ? t('telegram.connected') : t('telegram.notConnected')"></span></div>
+  <button x-show="!telegramLinked" @click="createTelegramLink()" :disabled="telegramLinkLoading" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 py-2 text-xs font-medium" x-text="telegramLinkLoading ? t('telegram.linking') : t('telegram.connect')"></button>
+  <button x-show="telegramLinked" @click="unlinkTelegram()" class="w-full rounded-lg border bg-white py-2 text-xs" x-text="t('telegram.disconnect')"></button>
   <p x-show="telegramLinkUrl" class="text-xs break-all"><a :href="telegramLinkUrl" target="_blank" class="underline text-emerald-700" x-text="telegramLinkUrl"></a></p>
-  <p class="text-[11px] text-zinc-500">Tap Connect to open Telegram — approve/reject notifications will arrive there. WhatsApp uses your mobile instead.</p>
+  <p class="text-[11px] text-zinc-500" x-text="t('telegram.hint')"></p>
   </div>
   <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
  <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
@@ -383,7 +383,7 @@
  <p x-show="adminUserSuccess" class="text-xs text-emerald-600" x-text="adminUserSuccess"></p>
  <!-- Reuses same registration form fields -->
  <input x-model="adminUserForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <input x-model="adminUserForm.email" :placeholder="t('auth.email') + ' (optional)'" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="adminUserForm.email" :placeholder="t('auth.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <div class="grid grid-cols-2 gap-2">
  <input x-model="adminUserForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="adminUserForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
@@ -574,8 +574,8 @@
   <input x-model="clubForm.club_name" :placeholder="t('admin.club.name')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <input x-model="clubForm.club_phone" :placeholder="t('admin.club.phone')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <input x-model="clubForm.club_address" :placeholder="t('admin.club.address')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <input x-model="clubForm.public_url" placeholder="Public URL e.g. https://empanadel.onrender.com" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
-  <p class="text-xs text-zinc-500">Used for notification links (Telegram/WhatsApp) — must be the production URL.</p>
+  <input x-model="clubForm.public_url" :placeholder="t('admin.club.publicUrlPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <p class="text-xs text-zinc-500" x-text="t('admin.club.publicUrlHint')"></p>
   <button @click="saveClubInfo()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.club.save')"></button>
    </div>
    </section>

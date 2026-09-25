@@ -4,6 +4,20 @@ import { appSettings } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 export default async function settingsRoutes(fastify: FastifyInstance) {
+  // Public club info for footer (no auth)
+  fastify.get("/api/club-info", async (_req, reply) => {
+    const db: any = (_req as any).server.db ?? (_req as any).db;
+    if (!db) return reply.send({ club_name: "Green Village", club_phone: "3923047417", club_address: "" });
+    try {
+      const rows = await db.select().from(appSettings).where(eq(appSettings.id, 1));
+      const s = rows[0];
+      if (!s) return reply.send({ club_name: "Green Village", club_phone: "3923047417", club_address: "" });
+      return reply.send({ club_name: s.clubName || "Green Village", club_phone: s.clubPhone || "3923047417", club_address: s.clubAddress || "" });
+    } catch {
+      return reply.send({ club_name: "Green Village", club_phone: "3923047417", club_address: "" });
+    }
+  });
+
   fastify.get("/api/settings", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (_req, reply) => {
     const db: any = (_req as any).server.db;
     if (!db) {
@@ -13,17 +27,23 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         max_advance_days: 14,
         min_cancel_hours: 2,
         auto_approve_bookings: false,
+        club_name: "Green Village",
+        club_phone: "3923047417",
+        club_address: "",
       });
     }
     const rows = await db.select().from(appSettings).where(eq(appSettings.id, 1));
     const s = rows[0];
-    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false });
+    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false, club_name: "Green Village", club_phone: "3923047417", club_address: "" });
     return reply.send({
       default_slot_duration_minutes: s.defaultSlotDurationMinutes,
       booking_hold_minutes: s.bookingHoldMinutes,
       max_advance_days: s.maxAdvanceDays,
       min_cancel_hours: s.minCancelHours,
       auto_approve_bookings: s.autoApproveBookings,
+      club_name: s.clubName,
+      club_phone: s.clubPhone,
+      club_address: s.clubAddress,
     });
   });
 
@@ -38,6 +58,9 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
     if (parsed.data.max_advance_days !== undefined) updates.maxAdvanceDays = parsed.data.max_advance_days;
     if (parsed.data.min_cancel_hours !== undefined) updates.minCancelHours = parsed.data.min_cancel_hours;
     if (parsed.data.auto_approve_bookings !== undefined) updates.autoApproveBookings = parsed.data.auto_approve_bookings;
+    if (parsed.data.club_name !== undefined) updates.clubName = parsed.data.club_name || null;
+    if (parsed.data.club_phone !== undefined) updates.clubPhone = parsed.data.club_phone || null;
+    if (parsed.data.club_address !== undefined) updates.clubAddress = parsed.data.club_address || null;
     updates.updatedAt = new Date();
     const [row] = await db.update(appSettings).set(updates).where(eq(appSettings.id, 1)).returning();
     return reply.send(row);

@@ -43,6 +43,11 @@ function app() {
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    clubInfo: null as null | { club_name: string; club_phone: string; club_address: string },
+    clubInfoLoading: false as boolean,
+    clubInfoError: "" as string,
+    clubInfoSuccess: "" as string,
+    clubForm: { club_name: "" as string, club_phone: "" as string, club_address: "" as string } as { club_name: string; club_phone: string; club_address: string },
     adminCourts: [] as Court[],
     adminCourtsLoading: false as boolean,
     adminCourtError: "" as string,
@@ -91,6 +96,7 @@ function app() {
       this.lang = detectLang();
       setLang(this.lang);
       try { this.pendingIntent = JSON.parse(localStorage.getItem("pending_booking_intent") || "null"); } catch { this.pendingIntent = null; }
+      await this.loadClubInfo();
       await this.loadCourts();
       const token = localStorage.getItem("token");
       if (token) {
@@ -125,6 +131,7 @@ function app() {
         if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
+        if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -134,6 +141,7 @@ function app() {
       if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
+      if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
     },
 
     isPastSlot(slot: { start: string }): boolean {
@@ -503,6 +511,38 @@ function app() {
       const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ auto_approve_bookings: next }) });
       if (!res.ok) { alert("Settings failed: " + await res.text()); return; }
       this.adminSettings.auto_approve_bookings = next;
+    },
+
+    async loadClubInfo() {
+      try {
+        const res = await fetch("/api/club-info");
+        if (res.ok) {
+          this.clubInfo = await res.json();
+          this.clubForm = { club_name: this.clubInfo?.club_name || "", club_phone: this.clubInfo?.club_phone || "", club_address: this.clubInfo?.club_address || "" };
+        }
+      } catch {}
+    },
+    async loadAdminClubInfo() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.clubInfoLoading = true; this.clubInfoError = ""; this.clubInfoSuccess = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const s = await res.json();
+          this.clubForm = { club_name: s.club_name || "", club_phone: s.club_phone || "", club_address: s.club_address || "" };
+          this.clubInfo = { club_name: s.club_name, club_phone: s.club_phone, club_address: s.club_address };
+        }
+      } catch (e: any) { this.clubInfoError = e.message || String(e); }
+      finally { this.clubInfoLoading = false; }
+    },
+    async saveClubInfo() {
+      this.clubInfoError = ""; this.clubInfoSuccess = "";
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null }) });
+      if (!res.ok) { this.clubInfoError = await res.text(); return; }
+      this.clubInfoSuccess = this.t("admin.club.saved");
+      await this.loadClubInfo();
     },
 
     async loadAdminCourts() {

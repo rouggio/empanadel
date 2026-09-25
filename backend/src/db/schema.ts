@@ -117,6 +117,9 @@ export const appSettings = pgTable("app_settings", {
   maxAdvanceDays: integer("max_advance_days").notNull().default(14),
   minCancelHours: integer("min_cancel_hours").notNull().default(2),
   autoApproveBookings: boolean("auto_approve_bookings").notNull().default(false),
+  clubName: varchar("club_name", { length: 100 }),
+  clubPhone: varchar("club_phone", { length: 30 }),
+  clubAddress: varchar("club_address", { length: 200 }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -80,6 +80,9 @@ export const settingsSchema = z.object({
   max_advance_days: z.number().int().min(1).max(90).optional(),
   min_cancel_hours: z.number().int().min(0).max(48).optional(),
   auto_approve_bookings: z.boolean().optional(),
+  club_name: z.string().max(100).optional().nullable(),
+  club_phone: z.string().max(30).optional().nullable(),
+  club_address: z.string().max(200).optional().nullable(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

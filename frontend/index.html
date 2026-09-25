@@ -16,23 +16,25 @@
  <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>
  <template x-if="user?.role==='admin'">
  <div class="flex gap-6">
- <a href="#admin-courts" class="hover:text-black" x-text="t('admin.courts.manage')"></a>
- <a href="#admin-users" class="hover:text-black" x-text="t('admin.users')"></a>
- <a href="#admin-bookings" class="hover:text-black" x-text="t('admin.bookings')"></a>
- <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
- </div>
- </template>
-  </nav>
-  <!-- Mobile admin dropdown (top, mobile only) -->
-  <div x-show="user?.role==='admin'" class="md:hidden relative">
-  <button @click="adminMobileOpen=!adminMobileOpen" class="flex items-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-medium">Admin <span x-text="adminMobileOpen ? '▲' : '▼'"></span></button>
-  <div x-show="adminMobileOpen" @click.outside="adminMobileOpen=false" class="absolute left-0 top-10 mt-1 w-48 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
-  <a href="#admin-courts" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.courts.manage')"></a>
-  <a href="#admin-users" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.users')"></a>
-  <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
-  <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
+  <a href="#admin-courts" class="hover:text-black" x-text="t('admin.courts.manage')"></a>
+  <a href="#admin-users" class="hover:text-black" x-text="t('admin.users')"></a>
+  <a href="#admin-bookings" class="hover:text-black" x-text="t('admin.bookings')"></a>
+  <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
+  <a href="#admin-club" class="hover:text-black" x-text="t('admin.club.title')"></a>
   </div>
-  </div>
+  </template>
+   </nav>
+   <!-- Mobile admin dropdown (top, mobile only) -->
+   <div x-show="user?.role==='admin'" class="md:hidden relative">
+   <button @click="adminMobileOpen=!adminMobileOpen" class="flex items-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-medium">Admin <span x-text="adminMobileOpen ? '▲' : '▼'"></span></button>
+   <div x-show="adminMobileOpen" @click.outside="adminMobileOpen=false" class="absolute left-0 top-10 mt-1 w-56 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
+   <a href="#admin-courts" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.courts.manage')"></a>
+   <a href="#admin-users" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.users')"></a>
+   <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
+   <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
+   <a href="#admin-club" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.club.title')"></a>
+   </div>
+   </div>
   <div class="flex items-center gap-2">
   <template x-if="!user">
  <div class="flex items-center gap-2 relative">
@@ -546,13 +548,27 @@
    </div>
   </div>
   </template>
-  <p x-show="!adminBlocksLoading && adminBlocks.length===0" class="text-xs text-zinc-500 text-center">No spot blocks</p>
-  </div>
+   <p x-show="!adminBlocksLoading && adminBlocks.length===0" class="text-xs text-zinc-500 text-center">No spot blocks</p>
+   </div>
+   </div>
+   </section>
+
+  <section x-show="view==='admin-club'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+  <h2 class="text-xl font-bold" x-text="t('admin.club.title')"></h2>
+  <p class="text-sm text-zinc-500" x-text="t('admin.club.desc')"></p>
+  <p x-show="clubInfoLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
+  <p x-show="clubInfoError" class="text-sm text-red-600" x-text="clubInfoError"></p>
+  <p x-show="clubInfoSuccess" class="text-sm text-emerald-600" x-text="clubInfoSuccess"></p>
+  <div class="space-y-3">
+  <input x-model="clubForm.club_name" :placeholder="t('admin.club.name')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="clubForm.club_phone" :placeholder="t('admin.club.phone')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="clubForm.club_address" :placeholder="t('admin.club.address')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <button @click="saveClubInfo()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.club.save')"></button>
   </div>
   </section>
- </main>
+  </main>
 
- <footer class="site-footer px-4 py-4 text-center text-xs text-zinc-500" x-text="t('footer')"></footer>
+  <footer class="site-footer px-4 py-4 text-center text-xs text-zinc-500" x-text="clubInfo ? `${clubInfo.club_name || 'Green Village'} - tel. ${clubInfo.club_phone || '3923047417'}${clubInfo.club_address ? ' - ' + clubInfo.club_address : ''}` : t('footer')"></footer>
  </div>
  <script type="module" src="/src/main.ts"></script>
  </body>

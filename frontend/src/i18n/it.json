@@ -155,5 +155,12 @@
   "admin.autoApprove.disabled": "Richiede approvazione manuale",
   "status.unavailable": "non disponibile",
   "admin.blocks.spot": "Blocchi puntuali",
-  "btn.clone": "Clona"
+  "btn.clone": "Clona",
+  "admin.club.title": "Info Club",
+  "admin.club.name": "Nome del club",
+  "admin.club.phone": "Telefono del club",
+  "admin.club.address": "Indirizzo",
+  "admin.club.save": "Salva",
+  "admin.club.saved": "Info salvate",
+  "admin.club.desc": "Recapito e indirizzo mostrati nel footer"
 }

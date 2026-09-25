@@ -123,7 +123,7 @@ function app() {
         if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
         if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
-        if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminCourts(); }
+        if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -132,7 +132,16 @@ function app() {
       if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
       if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
-      if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminCourts(); }
+      if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
+    },
+
+    isPastSlot(slot: { start: string }): boolean {
+      const tz = "Europe/Rome";
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+      if (this.selectedDate < today) return true;
+      if (this.selectedDate > today) return false;
+      const now = new Date().toLocaleTimeString("en-GB", { timeZone: tz, hour12: false }).slice(0, 5);
+      return slot.start < now;
     },
 
     filteredCourts() {
@@ -550,6 +559,12 @@ function app() {
     adminLessonError: "" as string,
     adminLessonForm: { courtId: "" as string, dayOfWeek: 1 as number, startTime: "15:00", endTime: "17:00", reason: "" } as { courtId: string; dayOfWeek: number; startTime: string; endTime: string; reason: string },
     editingLessonId: null as string | null,
+    // Ad-hoc blocks (spot blocks)
+    adminBlocks: [] as Array<{ id: string; courtId: string | null; startAt: string; endAt: string; reason: string }>,
+    adminBlocksLoading: false as boolean,
+    adminBlockError: "" as string,
+    adminBlockForm: { courtId: "" as string, date: "" as string, startTime: "10:00" as string, endTime: "12:00" as string, reason: "" as string } as { courtId: string; date: string; startTime: string; endTime: string; reason: string },
+    editingBlockId: null as string | null,
     adminUserForm: { username: "", email: "", password: "", first_name: "", last_name: "", role: "visitor" as string, mobile: "" } as { username: string; email: string; password: string; first_name: string; last_name: string; role: string; mobile: string },
     editingUserId: null as string | null,
     adminUserSuccess: "" as string,
@@ -582,6 +597,13 @@ function app() {
       this.adminLessonForm = { courtId: l.courtId || "", dayOfWeek: l.dayOfWeek, startTime: l.startTime.slice(0,5), endTime: l.endTime.slice(0,5), reason: l.reason };
     },
 
+    cloneLesson(l: any) {
+      this.editingLessonId = null;
+      this.adminLessonForm = { courtId: l.courtId || "", dayOfWeek: l.dayOfWeek, startTime: l.startTime.slice(0,5), endTime: l.endTime.slice(0,5), reason: l.reason };
+      this.adminLessonError = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
     cancelEditLesson() {
       this.editingLessonId = null;
       this.adminLessonForm = { courtId: "", dayOfWeek: 1, startTime: "15:00", endTime: "17:00", reason: "" };
@@ -598,6 +620,64 @@ function app() {
       this.editingLessonId = null;
       this.adminLessonForm = { courtId: "", dayOfWeek: 1, startTime: "15:00", endTime: "17:00", reason: "" };
       await this.loadAdminLessons(); await this.loadAvailability();
+    },
+
+    // Ad-hoc blocks CRUD
+    async loadAdminBlocks() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminBlocksLoading = true; this.adminBlockError = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/blocks", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminBlocks = await res.json();
+      } catch (e: any) { this.adminBlockError = e.message || String(e); }
+      finally { this.adminBlocksLoading = false; }
+    },
+    async createBlock() {
+      if (!this.adminBlockForm.date || !this.adminBlockForm.startTime || !this.adminBlockForm.endTime || !this.adminBlockForm.reason) { this.adminBlockError = "Date, times and reason required"; return; }
+      const token = localStorage.getItem("token");
+      const payload: any = { start_at: `${this.adminBlockForm.date}T${this.adminBlockForm.startTime}:00.000Z`, end_at: `${this.adminBlockForm.date}T${this.adminBlockForm.endTime}:00.000Z`, reason: this.adminBlockForm.reason };
+      if (this.adminBlockForm.courtId) payload.court_id = this.adminBlockForm.courtId;
+      const res = await fetch("/api/blocks", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.adminBlockError = await res.text(); return; }
+      this.adminBlockForm.reason = "";
+      await this.loadAdminBlocks(); await this.loadAvailability();
+    },
+    startEditBlock(b: any) {
+      this.editingBlockId = b.id;
+      const s = new Date(b.startAt); const e = new Date(b.endAt);
+      this.adminBlockForm = { courtId: b.courtId || "", date: s.toISOString().slice(0,10), startTime: s.toISOString().slice(11,16), endTime: e.toISOString().slice(11,16), reason: b.reason };
+    },
+    cloneBlock(b: any) {
+      this.editingBlockId = null;
+      const s = new Date(b.startAt); const e = new Date(b.endAt);
+      this.adminBlockForm = { courtId: b.courtId || "", date: s.toISOString().slice(0,10), startTime: s.toISOString().slice(11,16), endTime: e.toISOString().slice(11,16), reason: b.reason };
+      this.adminBlockError = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    cancelEditBlock() {
+      this.editingBlockId = null;
+      this.adminBlockForm = { courtId: "", date: "", startTime: "10:00", endTime: "12:00", reason: "" };
+      this.adminBlockError = "";
+    },
+    async updateBlock() {
+      if (!this.editingBlockId) return;
+      if (!this.adminBlockForm.date || !this.adminBlockForm.startTime || !this.adminBlockForm.endTime || !this.adminBlockForm.reason) { this.adminBlockError = "Date, times and reason required"; return; }
+      const token = localStorage.getItem("token");
+      const payload: any = { court_id: this.adminBlockForm.courtId || null, start_at: `${this.adminBlockForm.date}T${this.adminBlockForm.startTime}:00.000Z`, end_at: `${this.adminBlockForm.date}T${this.adminBlockForm.endTime}:00.000Z`, reason: this.adminBlockForm.reason };
+      const res = await fetch(`/api/blocks/${this.editingBlockId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.adminBlockError = await res.text(); return; }
+      this.editingBlockId = null;
+      this.adminBlockForm = { courtId: "", date: "", startTime: "10:00", endTime: "12:00", reason: "" };
+      await this.loadAdminBlocks(); await this.loadAvailability();
+    },
+    async deleteBlock(id: string) {
+      if (!confirm("Delete this spot block?")) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/blocks/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
+      await this.loadAdminBlocks(); await this.loadAvailability();
     },
 
     async deleteLesson(id: string) {

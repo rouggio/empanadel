@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { users } from "../db/schema.js";
+import { users, bookings, blocks, auditLog } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { profileSchema, registerSchema } from "../types/schemas.js";
 import bcrypt from "bcryptjs";
@@ -152,6 +152,20 @@ export default async function userRoutes(fastify: FastifyInstance) {
       const admins = await db.select().from(users).where(eq(users.role, "admin"));
       if (admins.length <= 1) return reply.status(400).send({ error: "Cannot delete the last admin" });
     }
+    // Cascade delete bookings to prevent FK violation (user_id FK without cascade)
+    try {
+      await db.delete(bookings).where(eq(bookings.userId, id));
+    } catch {}
+    // Also clear FK references in other tables
+    try {
+      await db.update(bookings).set({ reviewedBy: null } as any).where(eq(bookings.reviewedBy, id));
+    } catch {}
+    try {
+      await db.update(blocks).set({ createdBy: null } as any).where(eq(blocks.createdBy, id));
+    } catch {}
+    try {
+      await db.update(auditLog).set({ actorId: null } as any).where(eq(auditLog.actorId, id));
+    } catch {}
     const [row] = await db.delete(users).where(eq(users.id, id)).returning();
     if (!row) return reply.status(404).send({ error: "Not found" });
     return reply.status(204).send();

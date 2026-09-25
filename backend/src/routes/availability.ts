@@ -65,7 +65,7 @@ export default async function availabilityRoutes(fastify: FastifyInstance) {
       for (const bl of relevantBlocks) {
         const blStart = new Date(bl.startAt).toISOString().slice(11, 16);
         const blEnd = new Date(bl.endAt).toISOString().slice(11, 16);
-        if (overlaps(slotRange, { start: blStart, end: blEnd })) return { ...slot, status: "blocked" as const, bookingId: null };
+        if (overlaps(slotRange, { start: blStart, end: blEnd })) return { ...slot, status: "blocked" as const, bookingId: null, label: (bl as any).reason || "blocked" } as any;
       }
       for (const ru of relevantRules) {
         const rs = ru.startTime.slice(0, 5);

@@ -26,6 +26,21 @@ export default async function blockRoutes(fastify: FastifyInstance) {
     await db.delete(blocks).where(eq(blocks.id, id));
     return reply.status(204).send();
   });
+  fastify.patch("/api/blocks/:id", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
+    const db: any = (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const { id } = req.params as any;
+    const body = (req as any).body as any;
+    const updates: any = {};
+    if (body.court_id !== undefined) updates.courtId = body.court_id || null;
+    if (body.start_at !== undefined) updates.startAt = new Date(body.start_at);
+    if (body.end_at !== undefined) updates.endAt = new Date(body.end_at);
+    if (body.reason !== undefined) updates.reason = body.reason;
+    if (Object.keys(updates).length === 0) return reply.status(400).send({ error: "No fields to update" });
+    const [row] = await db.update(blocks).set(updates).where(eq(blocks.id, id)).returning();
+    if (!row) return reply.status(404).send({ error: "Not found" });
+    return reply.send(row);
+  });
 
   fastify.get("/api/blocking-rules", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
     const db: any = (req as any).server.db;

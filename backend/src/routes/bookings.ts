@@ -20,6 +20,14 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     const parsed = bookingIntentSchema.safeParse((req as any).body);
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
     const { court_id, date, start_time, notes, rent_racquets, players } = parsed.data as any;
+    // Prevent booking in the past (Europe/Rome)
+    const tz = process.env.CLUB_TIMEZONE || "Europe/Rome";
+    const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    if (date < todayStr) return reply.status(400).send({ error: "Cannot book in the past" });
+    if (date === todayStr) {
+      const nowTime = new Date().toLocaleTimeString("en-GB", { timeZone: tz, hour12: false }).slice(0, 5);
+      if (start_time.slice(0, 5) < nowTime) return reply.status(400).send({ error: "Cannot book a time slot in the past" });
+    }
     // Default players per court type if not provided: tennis 2 (single), padel 4 (double)
     let playersVal = players;
     if (playersVal === undefined) {

@@ -82,7 +82,7 @@
  <select x-model="filterType" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm">
  <option value="" x-text="t('filter.all')"></option><option value="tennis">Tennis</option><option value="padel">Padel</option>
  </select>
- <input type="date" x-model="selectedDate" @change="loadAvailability()" class="rounded-lg border px-3 py-2 text-sm" />
+  <input type="date" x-model="selectedDate" @change="loadAvailability()" :min="new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' })" class="rounded-lg border px-3 py-2 text-sm" />
  </div>
  </div>
  <div x-show="user?.role==='admin' && timetableAdminSelected" class="rounded-xl border p-4 flex flex-wrap items-center justify-between gap-2" :class="timetableAdminSelected?.status==='pending_approval' ? 'border-amber-300 bg-amber-50' : 'border-red-300 bg-red-50'">
@@ -107,11 +107,11 @@
  <template x-for="slot in availability[court.id] || []" :key="slot.start">
  <button
  @click="selectSlot(court, slot)"
- :disabled="slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked'))"
+ :disabled="isPastSlot(slot) || (slot.status!=='available' && !(user?.role==='admin' && (slot.status==='pending_approval' || slot.status==='booked')))"
  class="rounded-lg border px-2 py-2 text-xs font-medium"
- :class="(slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? ' border-2 !border-red-700 ring-1 ring-red-700 font-bold ' : '') + (slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : slot.status==='lesson' ? 'bg-amber-900 text-white border-amber-800 cursor-not-allowed' : 'bg-zinc-100 text-zinc-400')"
+ :class="isPastSlot(slot) ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : ((slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? ' border-2 !border-red-700 ring-1 ring-red-700 font-bold ' : '') + (slot.status==='available' ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' : slot.status==='booked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : slot.status==='pending_approval' ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : slot.status==='lesson' ? 'bg-red-50 text-red-700 border-red-200' : slot.status==='blocked' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-zinc-100 text-zinc-400'))"
  :title="slot.label || ''"
- x-text="(slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? '★ ' : '') + (slot.status==='lesson' ? (slot.label || t('status.blocked')) : `${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}${user?.role==='admin' && slot.bookingUsername ? ' [' + slot.bookingUsername + ']' : ''}`)"
+ x-text="(slot.bookingUserId && user && String(slot.bookingUserId)===String(user.id) && (slot.status==='booked' || slot.status==='pending_approval') ? '★ ' : '') + (slot.status==='lesson' ? `${t('status.unavailable')}: ${slot.label || t('status.blocked')}` : slot.status==='blocked' ? `${t('status.unavailable')}: ${slot.label || t('status.blocked')}` : `${slot.start} ${slot.status==='available' ? '✓' : t('status.'+slot.status)}${user?.role==='admin' && slot.bookingUsername ? ' [' + slot.bookingUsername + ']' : ''}`)"
  ></button>
  </template>
  </div>
@@ -500,20 +500,64 @@
  <div class="flex items-center justify-between rounded border px-3 py-2 text-sm" :class="l.isActive ? 'bg-amber-50 border-amber-200' : 'bg-zinc-100 opacity-60'">
  <div>
  <span class="font-medium" x-text="l.reason"></span>
- <span class="text-zinc-500" x-text="` · ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][l.dayOfWeek]} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
+ <span class="text-zinc-500" x-text="` · ${t('weekday.'+['sun','mon','tue','wed','thu','fri','sat'][l.dayOfWeek])} ${l.startTime.slice(0,5)}–${l.endTime.slice(0,5)}`"></span>
  <span class="text-zinc-500" x-text="l.courtId ? ' · ' + (adminCourts.find(c=>c.id===l.courtId)?.name || (adminCourts.find(c=>c.id===l.courtId)?.number ? 'Court ' + adminCourts.find(c=>c.id===l.courtId).number : l.courtId.slice(0,4))) : ' · All courts'"></span>
  </div>
-  <div class="flex gap-1">
-  <button @click="startEditLesson(l)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
-  <button @click="toggleLesson(l.id, l.isActive)" class="rounded border px-2 py-1 text-xs" x-text="l.isActive ? t('btn.disable') : t('btn.enable')"></button>
-  <button @click="deleteLesson(l.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
-  </div>
+   <div class="flex gap-1">
+   <button @click="startEditLesson(l)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+   <button @click="cloneLesson(l)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.clone')"></button>
+   <button @click="toggleLesson(l.id, l.isActive)" class="rounded border px-2 py-1 text-xs" x-text="l.isActive ? t('btn.disable') : t('btn.enable')"></button>
+   <button @click="deleteLesson(l.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
+   </div>
  </div>
  </template>
- <p x-show="!adminLessonsLoading && adminLessons.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.lessons.noLessons')"></p>
- </div>
- </div>
- </section>
+  <p x-show="!adminLessonsLoading && adminLessons.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.lessons.noLessons')"></p>
+  </div>
+  </div>
+  <div class="rounded-xl border bg-white p-4">
+  <div class="flex items-center justify-between mb-3">
+  <div class="font-semibold" x-text="t('admin.blocks.spot')"></div>
+  <span x-show="adminBlocksLoading" class="text-xs text-zinc-500" x-text="t('myBookings.loading')"></span>
+  </div>
+  <div x-show="adminBlockError" class="text-xs text-red-600 mb-2" x-text="adminBlockError"></div>
+  <div class="grid gap-2 md:grid-cols-5 mb-3">
+  <select x-model="adminBlockForm.courtId" class="rounded border px-2 py-1 text-sm">
+  <option value="" x-text="t('admin.lessons.allCourts')"></option>
+  <template x-for="c in adminCourts" :key="c.id"><option :value="c.id" x-text="`${c.name || `#${c.number}`} · ${c.type}`"></option></template>
+  </select>
+  <input type="date" x-model="adminBlockForm.date" class="rounded border px-2 py-1 text-sm" />
+  <input type="time" x-model="adminBlockForm.startTime" class="rounded border px-2 py-1 text-sm" />
+  <input type="time" x-model="adminBlockForm.endTime" class="rounded border px-2 py-1 text-sm" />
+  <input x-model="adminBlockForm.reason" :placeholder="t('admin.lessons.reason')" class="rounded border px-2 py-1 text-sm" />
+  </div>
+  <div class="flex gap-2">
+  <button x-show="!editingBlockId" @click="createBlock()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('admin.lessons.add')"></button>
+  <template x-if="editingBlockId">
+  <div class="flex gap-2">
+  <button @click="updateBlock()" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.update')"></button>
+  <button @click="cancelEditBlock()" class="rounded border px-4 py-2 text-sm" x-text="t('btn.cancel')"></button>
+  </div>
+  </template>
+  </div>
+  <div class="mt-3 space-y-2">
+  <template x-for="b in adminBlocks" :key="b.id">
+  <div class="flex items-center justify-between rounded border px-3 py-2 text-sm bg-red-50 border-red-200">
+  <div>
+  <span class="font-medium" x-text="b.reason"></span>
+  <span class="text-zinc-500" x-text="` · ${new Date(b.startAt).toLocaleDateString()} ${new Date(b.startAt).toISOString().slice(11,16)}–${new Date(b.endAt).toISOString().slice(11,16)}`"></span>
+  <span class="text-zinc-500" x-text="b.courtId ? ' · ' + (adminCourts.find(c=>c.id===b.courtId)?.name || (adminCourts.find(c=>c.id===b.courtId)?.number ? 'Court ' + adminCourts.find(c=>c.id===b.courtId).number : b.courtId.slice(0,4))) : ' · All courts'"></span>
+  </div>
+   <div class="flex gap-1">
+   <button @click="startEditBlock(b)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+   <button @click="cloneBlock(b)" class="rounded border px-2 py-1 text-xs" x-text="t('btn.clone')"></button>
+   <button @click="deleteBlock(b.id)" class="rounded border px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
+   </div>
+  </div>
+  </template>
+  <p x-show="!adminBlocksLoading && adminBlocks.length===0" class="text-xs text-zinc-500 text-center">No spot blocks</p>
+  </div>
+  </div>
+  </section>
  </main>
 
  <footer class="site-footer px-4 py-4 text-center text-xs text-zinc-500" x-text="t('footer')"></footer>

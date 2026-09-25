@@ -207,5 +207,11 @@
   "admin.notifications.viaWhatsapp": "Recevoir les notifications via WhatsApp",
   "myBookings.lastMonth": "dernier mois",
   "myBookings.last3Months": "3 derniers mois",
-  "myBookings.last6Months": "6 derniers mois"
+  "myBookings.last6Months": "6 derniers mois",
+  "admin.timetable.title": "Horaires des terrains",
+  "admin.timetable.desc": "Définissez ouverture, fermeture et durée du créneau pour chaque jour pour le terrain sélectionné. Utilise GET/PUT /api/timetable.",
+  "admin.timetable.court": "Terrain",
+  "admin.timetable.closed": "Fermé",
+  "admin.timetable.save": "Enregistrer horaires",
+  "admin.timetable.saved": "Horaires enregistrés"
 }

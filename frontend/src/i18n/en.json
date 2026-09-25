@@ -207,5 +207,11 @@
   "admin.notifications.viaWhatsapp": "Receive notifications via WhatsApp",
   "myBookings.lastMonth": "last month",
   "myBookings.last3Months": "last 3 months",
-  "myBookings.last6Months": "last 6 months"
+  "myBookings.last6Months": "last 6 months",
+  "admin.timetable.title": "Court Timetable",
+  "admin.timetable.desc": "Define open, close and slot duration for each weekday for the selected court. Uses existing GET/PUT /api/timetable APIs.",
+  "admin.timetable.court": "Court",
+  "admin.timetable.closed": "Closed",
+  "admin.timetable.save": "Save timetable",
+  "admin.timetable.saved": "Timetable saved"
 }

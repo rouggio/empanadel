@@ -207,5 +207,11 @@
   "admin.notifications.viaWhatsapp": "Recibir notificaciones vía WhatsApp",
   "myBookings.lastMonth": "último mes",
   "myBookings.last3Months": "últimos 3 meses",
-  "myBookings.last6Months": "últimos 6 meses"
+  "myBookings.last6Months": "últimos 6 meses",
+  "admin.timetable.title": "Horario de pistas",
+  "admin.timetable.desc": "Define apertura, cierre y duración de franja para cada día para la pista seleccionada. Usa GET/PUT /api/timetable.",
+  "admin.timetable.court": "Pista",
+  "admin.timetable.closed": "Cerrado",
+  "admin.timetable.save": "Guardar horario",
+  "admin.timetable.saved": "Horario guardado"
 }

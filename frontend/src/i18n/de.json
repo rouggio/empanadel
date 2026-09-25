@@ -207,5 +207,11 @@
   "admin.notifications.viaWhatsapp": "Benachrichtigungen via WhatsApp erhalten",
   "myBookings.lastMonth": "letzter Monat",
   "myBookings.last3Months": "letzte 3 Monate",
-  "myBookings.last6Months": "letzte 6 Monate"
+  "myBookings.last6Months": "letzte 6 Monate",
+  "admin.timetable.title": "Platz-Zeitplan",
+  "admin.timetable.desc": "Definiere Öffnung, Schließung und Slot-Dauer für jeden Wochentag für den ausgewählten Platz. Nutzt GET/PUT /api/timetable.",
+  "admin.timetable.court": "Platz",
+  "admin.timetable.closed": "Geschlossen",
+  "admin.timetable.save": "Zeitplan speichern",
+  "admin.timetable.saved": "Zeitplan gespeichert"
 }

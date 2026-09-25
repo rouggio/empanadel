@@ -65,6 +65,11 @@ function app() {
     adminCourtSuccess: "" as string,
     adminCourtForm: { number: null as number | null, type: "tennis" as "tennis" | "padel", name: "", surface: "" } as { number: number | null; type: "tennis" | "padel"; name: string; surface: string },
     editingCourtId: null as string | null,
+    adminTimetableCourtId: "" as string,
+    adminTimetableRows: [] as Array<{ dayOfWeek: number; openTime: string; closeTime: string; slotDurationMinutes: number; isClosed: boolean }>,
+    adminTimetableLoading: false as boolean,
+    adminTimetableError: "" as string,
+    adminTimetableSuccess: "" as string,
     profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
@@ -137,7 +142,7 @@ function app() {
       const hash = location.hash.replace("#", "").split("?")[0];
       if (hash) this.view = hash;
       this.syncHighlight();
-      window.addEventListener("hashchange", () => {
+      window.addEventListener("hashchange", async () => {
         this.view = (location.hash.replace("#", "").split("?")[0]) || "home";
         this.syncHighlight();
         if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
@@ -151,6 +156,7 @@ function app() {
         if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
         if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
+        if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -163,6 +169,7 @@ function app() {
       if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
       if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
+      if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
     },
 
     isPastSlot(slot: { start: string }): boolean {
@@ -662,8 +669,58 @@ function app() {
         const res = await fetch("/api/courts", { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(await res.text());
         this.adminCourts = await res.json();
+        if (!this.adminTimetableCourtId && this.adminCourts.length) this.adminTimetableCourtId = this.adminCourts[0].id;
       } catch (e: any) { this.adminCourtError = e.message || String(e); }
       finally { this.adminCourtsLoading = false; }
+    },
+    async loadAdminTimetable() {
+      if (!this.adminTimetableCourtId) { this.adminTimetableError = "Select a court"; return; }
+      this.adminTimetableLoading = true; this.adminTimetableError = ""; this.adminTimetableSuccess = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/timetable?court_id=${this.adminTimetableCourtId}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const rows: any[] = await res.json();
+        const byDay: Record<number, any> = {};
+        for (const r of rows) if (r.courtId) byDay[r.dayOfWeek] = r;
+        this.adminTimetableRows = [1,2,3,4,5,6,0].map((dow) => {
+          const r = byDay[dow];
+          return {
+            dayOfWeek: dow,
+            openTime: r?.openTime ? String(r.openTime).slice(0,5) : "08:00",
+            closeTime: r?.closeTime ? String(r.closeTime).slice(0,5) : "22:00",
+            slotDurationMinutes: r?.slotDurationMinutes || (this.adminCourts.find(c=>c.id===this.adminTimetableCourtId)?.type==='padel' ? 90 : 60),
+            isClosed: !!r?.isClosed,
+          };
+        });
+      } catch (e: any) { this.adminTimetableError = e.message || String(e); }
+      finally { this.adminTimetableLoading = false; }
+    },
+    async saveAdminTimetable() {
+      if (!this.adminTimetableCourtId) return;
+      this.adminTimetableLoading = true; this.adminTimetableError = ""; this.adminTimetableSuccess = "";
+      try {
+        const token = localStorage.getItem("token");
+        const payload = this.adminTimetableRows.map(r => ({
+          court_id: this.adminTimetableCourtId,
+          day_of_week: r.dayOfWeek,
+          open_time: r.isClosed ? null : r.openTime,
+          close_time: r.isClosed ? null : r.closeTime,
+          slot_duration_minutes: r.slotDurationMinutes,
+          is_closed: r.isClosed,
+        }));
+        const res = await fetch("/api/timetable", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminTimetableSuccess = this.t('admin.timetable.saved');
+        await this.loadAvailability();
+      } catch (e: any) { this.adminTimetableError = e.message || String(e); }
+      finally { this.adminTimetableLoading = false; }
+    },
+    openAdminTimetable(courtId: string) {
+      this.adminTimetableCourtId = courtId;
+      this.view = "admin-timetable";
+      location.hash = "admin-timetable";
+      this.loadAdminTimetable();
     },
 
     async createCourt() {

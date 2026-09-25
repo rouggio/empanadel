@@ -207,5 +207,11 @@
   "admin.notifications.viaWhatsapp": "Ricevi notifiche su WhatsApp",
   "myBookings.lastMonth": "ultimo mese",
   "myBookings.last3Months": "ultimi 3 mesi",
-  "myBookings.last6Months": "ultimi 6 mesi"
+  "myBookings.last6Months": "ultimi 6 mesi",
+  "admin.timetable.title": "Orari campi",
+  "admin.timetable.desc": "Definisci apertura, chiusura e durata slot per ogni giorno della settimana per il campo selezionato. Usa le API esistenti GET/PUT /api/timetable.",
+  "admin.timetable.court": "Campo",
+  "admin.timetable.closed": "Chiuso",
+  "admin.timetable.save": "Salva orari",
+  "admin.timetable.saved": "Orari salvati"
 }

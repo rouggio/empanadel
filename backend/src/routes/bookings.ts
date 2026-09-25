@@ -57,15 +57,19 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     }
     const endTime = computeEnd(start_time, duration);
 
+    const normStart = start_time.length === 5 ? `${start_time}:00` : start_time;
     const existing = await db.select().from(bookings).where(and(eq(bookings.courtId, court_id), eq(bookings.date, date)));
     const overlaps = existing.filter(
       (b: any) =>
         ["pending_registration", "pending_approval", "approved"].includes(b.status) &&
         !(b.status === "pending_registration" && b.expiresAt && new Date(b.expiresAt) < new Date()) &&
         b.startTime < endTime &&
-        start_time < b.endTime
+        normStart < b.endTime
     );
-    if (overlaps.length) return reply.status(409).send({ error: "Slot already booked or held" });
+    if (overlaps.length) {
+      console.warn(`[bookings 409] court=${court_id} date=${date} req=${normStart}-${endTime} duration=${duration} existing=${JSON.stringify(existing.map((b:any)=>({s:b.startTime,e:b.endTime,status:b.status})))} overlaps=${JSON.stringify(overlaps.map((b:any)=>({s:b.startTime,e:b.endTime})))}`);
+      return reply.status(409).send({ error: "Slot already booked or held" });
+    }
 
     const settings = await db.select().from(appSettings).where(eq(appSettings.id, 1));
     const autoApprove = settings[0]?.autoApproveBookings ?? false;

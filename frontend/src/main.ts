@@ -42,6 +42,7 @@ function app() {
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
+    adminHighlightId: null as string | null,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
     notificationForm: { notifications_enabled: false, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
     notificationTestResult: "" as string,
@@ -56,7 +57,7 @@ function app() {
     clubInfoLoading: false as boolean,
     clubInfoError: "" as string,
     clubInfoSuccess: "" as string,
-    clubForm: { club_name: "" as string, club_phone: "" as string, club_address: "" as string } as { club_name: string; club_phone: string; club_address: string },
+    clubForm: { club_name: "" as string, club_phone: "" as string, club_address: "" as string, public_url: "https://empanadel.onrender.com" as string } as { club_name: string; club_phone: string; club_address: string; public_url: string },
     adminCourts: [] as Court[],
     adminCourtsLoading: false as boolean,
     adminCourtError: "" as string,
@@ -128,10 +129,12 @@ function app() {
           }
         } catch {}
       }
-      const hash = location.hash.replace("#", "");
+      const hash = location.hash.replace("#", "").split("?")[0];
       if (hash) this.view = hash;
+      this.syncHighlight();
       window.addEventListener("hashchange", () => {
-        this.view = location.hash.replace("#", "") || "home";
+        this.view = (location.hash.replace("#", "").split("?")[0]) || "home";
+        this.syncHighlight();
         if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
@@ -550,6 +553,17 @@ function app() {
       const data = await res.json().catch(() => ({}));
       this.notificationTestResult = JSON.stringify(data, null, 2);
     },
+    syncHighlight() {
+      const hash = location.hash || "";
+      const q = hash.includes("?") ? hash.split("?")[1] : "";
+      const h = new URLSearchParams(q).get("highlight");
+      this.adminHighlightId = h || null;
+      if (h && this.view === "admin-bookings" && this.adminFilter !== "") {
+        // ensure highlighted booking visible even if filter is pending_approval
+        this.adminFilter = "";
+        // will reload on next loadAdminBookings call — caller handles
+      }
+    },
 
     async toggleAutoApprove() {
       if (!this.adminSettings) return;
@@ -577,7 +591,7 @@ function app() {
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const s = await res.json();
-          this.clubForm = { club_name: s.club_name || "", club_phone: s.club_phone || "", club_address: s.club_address || "" };
+          this.clubForm = { club_name: s.club_name || "", club_phone: s.club_phone || "", club_address: s.club_address || "", public_url: s.public_url || "https://empanadel.onrender.com" };
           this.clubInfo = { club_name: s.club_name, club_phone: s.club_phone, club_address: s.club_address };
         }
       } catch (e: any) { this.clubInfoError = e.message || String(e); }
@@ -586,7 +600,7 @@ function app() {
     async saveClubInfo() {
       this.clubInfoError = ""; this.clubInfoSuccess = "";
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null }) });
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null, public_url: this.clubForm.public_url || null }) });
       if (!res.ok) { this.clubInfoError = await res.text(); return; }
       this.clubInfoSuccess = this.t("admin.club.saved");
       await this.loadClubInfo();

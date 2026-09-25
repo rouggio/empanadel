@@ -121,6 +121,7 @@ export const appSettings = pgTable("app_settings", {
   clubName: varchar("club_name", { length: 100 }),
   clubPhone: varchar("club_phone", { length: 30 }),
   clubAddress: varchar("club_address", { length: 200 }),
+  publicUrl: varchar("public_url", { length: 255 }),
   notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
   telegramBotToken: text("telegram_bot_token"),
   telegramAdminChatId: varchar("telegram_admin_chat_id", { length: 255 }),

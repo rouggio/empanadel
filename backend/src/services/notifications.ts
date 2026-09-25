@@ -68,13 +68,19 @@ export async function sendWhatsAppMessage(phoneNumberId: string, token: string, 
   }
 }
 
-function buildAdminPendingMessage(b: any, user: any, court: any, clubName: string): string {
+function bookingAdminUrl(bookingId: string, settings: any): string {
+  const base = (settings?.publicUrl || process.env.FRONTEND_URL || process.env.PUBLIC_URL || process.env.CORS_ORIGIN || "https://empanadel.onrender.com").replace(/\/$/, "");
+  return `${base}/#admin-bookings?highlight=${bookingId}`;
+}
+
+function buildAdminPendingMessage(b: any, user: any, court: any, clubName: string, settings: any): string {
   const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
   const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
   const who = user ? `${user.username} (${user.firstName ?? ""} ${user.lastName ?? ""})`.trim() : b.userId;
   const rent = b.rentRacquets ? ` · ${b.rentRacquets} racquets` : "";
   const players = b.players ? ` · ${b.players} players` : "";
-  return `🔔 <b>${clubName}</b> — New booking pending approval\nCourt: ${courtLabel}\nWhen: ${when}${players}${rent}\nUser: ${who}\nNotes: ${b.notes || "-"}\nBooking ID: ${b.id}`;
+  const url = bookingAdminUrl(b.id, settings);
+  return `🔔 <b>${clubName}</b> — New booking pending approval\nCourt: ${courtLabel}\nWhen: ${when}${players}${rent}\nUser: ${who}\nNotes: ${b.notes || "-"}\nBooking ID: ${b.id}\nManage: ${url}\n<a href="${url}">👉 Open booking to approve/reject</a>`;
 }
 
 function buildUserDecisionMessage(b: any, court: any, clubName: string, decision: "approved" | "rejected"): string {
@@ -102,7 +108,7 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
       const cRows = await db.select().from(courts).where(eq(courts.id, booking.courtId)).limit(1);
       court = cRows[0] ?? null;
     } catch {}
-    const text = buildAdminPendingMessage(booking, user, court, clubName);
+    const text = buildAdminPendingMessage(booking, user, court, clubName, settings);
 
     const telegramBotToken = settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
     const telegramAdminChatId = settings.telegramAdminChatId || process.env.TELEGRAM_ADMIN_CHAT_ID || "";
@@ -181,6 +187,7 @@ export function maskSettingsForAdminResponse(s: any) {
     club_name: s.clubName,
     club_phone: s.clubPhone,
     club_address: s.clubAddress,
+    public_url: s.publicUrl || "https://empanadel.onrender.com",
     notifications_enabled: s.notificationsEnabled,
     telegram_bot_token: s.telegramBotToken ? maskToken(s.telegramBotToken) : null,
     telegram_bot_token_present: !!s.telegramBotToken,

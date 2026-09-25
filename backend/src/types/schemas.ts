@@ -84,6 +84,7 @@ export const settingsSchema = z.object({
   club_name: z.string().max(100).optional().nullable(),
   club_phone: z.string().max(30).optional().nullable(),
   club_address: z.string().max(200).optional().nullable(),
+  public_url: z.string().url().max(255).optional().nullable().or(z.literal("")),
   notifications_enabled: z.boolean().optional(),
   telegram_bot_token: z.string().max(500).optional().nullable(),
   telegram_admin_chat_id: z.string().max(255).optional().nullable(),

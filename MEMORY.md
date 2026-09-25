@@ -53,14 +53,15 @@
 - Display name first: `frontend/src/main.ts:391` `courtLabel()` `${c.name || Court ${number}}·type`, `175` `pendingIntent courtLabel`, `frontend/index.html:103,323,481,505,90` all `court.name || #number` primary, `type` + `#number` secondary. Never show `Court X` if `name` exists (e.g. `Centrale` not `Court 1`).
 
 ## 8. Admin UX — HABITS
-- **Separate screens**: `view==='admin-courts|users|create-user|view-user|bookings|blocks|club'` (not single `admin`), `frontend/src/main.ts:115` hash handling + `viewedUserBack` for back from `admin-view-user` to caller (`bookings` or `users` via `viewUser`/`viewUserById`/`backFromViewUser()`).
-- **Club screen**: `admin-club` (`admin.club.title` etc. in 5 langs) — `Admin → Club` (top nav dropdown mobile) with `clubForm` 3 inputs + `saveClubInfo()` → `PUT /api/settings`.
-- **Nav**: desktop `hidden md:flex` with 4 admin links, mobile `md:hidden` dropdown top (`adminMobileOpen`) with same 4 links; bottom `nav` `fixed` now only `Courts/MyBookings/Profile` (removed admin 4 Links to avoid overlap).
+- **Separate screens**: `view==='admin-courts|timetable|users|create-user|view-user|bookings|blocks|club|reports|notifications'` (not single `admin`), `frontend/src/main.ts:115` hash handling + `viewedUserBack` for back from `admin-view-user` to caller (`bookings` or `users` via `viewUser`/`viewUserById`/`backFromViewUser()`).
+- **Club screen**: `admin-club` (`admin.club.title` etc. in 5 langs) — `Admin → Club` (top nav dropdown mobile) with `clubForm` 4 inputs (`club_name/phone/address/public_url`) + `saveClubInfo()` → `PUT /api/settings`.
+- **Timetable screen**: `admin-timetable` dedicated per-court `GET /api/timetable?court_id` + `PUT /api/timetable` bulk 7 days, `frontend/src/main.ts:62` `adminTimetableCourtId/Rows` + `loadAdminTimetable/saveAdminTimetable/openAdminTimetable`, `frontend/index.html:340` `Timetable` button per court + selector + 7-row table `weekday` `open/close/duration/closed` `3bf12ee` local only.
+- **Nav**: desktop `hidden md:flex` with 5-6 admin links (`courts/timetable/users/bookings/blocks/club/reports/notifications`), mobile `md:hidden` dropdown top (`adminMobileOpen`) same; bottom `nav` `fixed` now only `Courts/MyBookings/Profile` (removed admin 4 Links to avoid overlap).
 - **Courts CRUD**: `adminCourts` list shows `name || #number`, `type`, `surface`, `active`; `adminCourtForm` + `editingCourtId`.
 - **Users**: `adminUsers` clickable `viewUser(u)` → read-only `admin-view-user` (disabled inputs `bg-zinc-100`), `username` in bookings links via `viewUserById(userId)` (fetches `/api/users` if not in `adminUsers`).
 - **Blocks**: recurring `blockingRules` + ad-hoc `blocks` on same `admin-blocks` screen: `adminLessons` + `adminBlocks`, each with `Add`/`Update`/`Cancel` + per-row `Edit`/`Clone`/`Disable|Enable`/`Delete`, `editingLessonId`/`editingBlockId`, `PATCH /api/blocks/:id` and `PATCH /api/blocking-rules/:id` (`court_id` now handled).
-- **My Bookings**: `view==='me'` no `Refresh` button (removed), `Edit` + `Cancel` kept, rent line localised `0 racchette a noleggio` via `t('confirm.rent')`, no `b.id.slice` hash.
-- **Profile**: `mobile/gender/birthdate/preferred_sport` etc., `t('profile.updated')` etc.
+- **My Bookings**: `view==='me'` `bookingsTab upcoming/past/all` + `bookingsPastRange month/3months/6months` `t('myBookings.lastMonth...')` filter `past` + `all` via `cutoffFor()`, no `Refresh` button, `Edit` + `Cancel` kept, rent line localised, `sort desc` most recent on top `sort((a,b)=>b.date.localeCompare(a.date))`, no `b.id.slice` hash.
+- **Profile**: `mobile/telegram (Connect via t.me/... auto-link, hidden chat_id) /gender/birthdate/preferred_sport/ preferredLanguage` etc., `t('profile.updated')` etc. `telegram.*` localised, `common.optional` for `email`.
 
 ## 9. Validation & Errors — HABIT
 - Backend Zod `flatten()` yields `{fieldErrors, formErrors}`; frontend `frontend/src/main.ts:231` `register()` and `307` `login()` map `fieldErrors` → `t('field.*') + t('validation.*')` bullet list `• ` + `\n` with `whitespace-pre-line` `frontend/index.html:167,198` `div` `border-red-200 bg-red-50`, `409` `error.taken` localised.

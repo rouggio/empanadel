@@ -171,5 +171,6 @@
   "admin.reports.byUser": "Réservations par utilisateur",
   "admin.reports.cancellations": "Annulations par utilisateur",
   "admin.reports.period": "Période",
-  "admin.reports.noData": "Aucune donnée"
+  "admin.reports.noData": "Aucune donnée",
+  "admin.blocks.noBlocks": "Aucun bloc ponctuel"
 }

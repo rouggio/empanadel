@@ -171,5 +171,6 @@
   "admin.reports.byUser": "Buchungen pro Benutzer",
   "admin.reports.cancellations": "Stornierungen pro Benutzer",
   "admin.reports.period": "Zeitraum",
-  "admin.reports.noData": "Keine Daten"
+  "admin.reports.noData": "Keine Daten",
+  "admin.blocks.noBlocks": "Keine punktuellen Sperren"
 }

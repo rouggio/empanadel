@@ -162,5 +162,14 @@
   "admin.club.address": "Adresse",
   "admin.club.save": "Speichern",
   "admin.club.saved": "Infos gespeichert",
-  "admin.club.desc": "Kontakt und Adresse im Footer"
+  "admin.club.desc": "Kontakt und Adresse im Footer",
+  "admin.reports.title": "Berichte",
+  "admin.reports.weekly": "Wöchentlich",
+  "admin.reports.monthly": "Monatlich",
+  "admin.reports.yearly": "Jährlich",
+  "admin.reports.overall": "Buchungen gesamt",
+  "admin.reports.byUser": "Buchungen pro Benutzer",
+  "admin.reports.cancellations": "Stornierungen pro Benutzer",
+  "admin.reports.period": "Zeitraum",
+  "admin.reports.noData": "Keine Daten"
 }

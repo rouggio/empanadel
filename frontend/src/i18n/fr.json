@@ -162,5 +162,14 @@
   "admin.club.address": "Adresse",
   "admin.club.save": "Enregistrer",
   "admin.club.saved": "Infos enregistrées",
-  "admin.club.desc": "Contact et adresse affichés en pied de page"
+  "admin.club.desc": "Contact et adresse affichés en pied de page",
+  "admin.reports.title": "Rapports",
+  "admin.reports.weekly": "Hebdomadaire",
+  "admin.reports.monthly": "Mensuel",
+  "admin.reports.yearly": "Annuel",
+  "admin.reports.overall": "Réservations totales",
+  "admin.reports.byUser": "Réservations par utilisateur",
+  "admin.reports.cancellations": "Annulations par utilisateur",
+  "admin.reports.period": "Période",
+  "admin.reports.noData": "Aucune donnée"
 }

@@ -43,6 +43,13 @@ function app() {
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    reportsPeriod: "weekly" as "weekly" | "monthly" | "yearly",
+    reportsDate: new Date().toISOString().slice(0, 10) as string,
+    reportsLoading: false as boolean,
+    reportsError: "" as string,
+    reportsData: null as null | { period: string; refDate: string; startDate: string; endDate: string; overall: number; byUser: Array<{ userId: string; username: string; count: number }>; cancellationsByUser: Array<{ userId: string; username: string; count: number }>; timeline: Array<{ label: string; startDate: string; endDate: string; count: number }> },
+    reportsSliceData: null as null | { period: string; startDate: string; endDate: string; overall: number; byUser: Array<{ userId: string; username: string; count: number }>; cancellationsByUser: Array<{ userId: string; username: string; count: number }> },
+    reportsSelectedLabel: "" as string,
     clubInfo: null as null | { club_name: string; club_phone: string; club_address: string },
     clubInfoLoading: false as boolean,
     clubInfoError: "" as string,
@@ -132,6 +139,7 @@ function app() {
         if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
         if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
+        if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -142,6 +150,7 @@ function app() {
       if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
       if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
+      if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
     },
 
     isPastSlot(slot: { start: string }): boolean {
@@ -543,6 +552,32 @@ function app() {
       if (!res.ok) { this.clubInfoError = await res.text(); return; }
       this.clubInfoSuccess = this.t("admin.club.saved");
       await this.loadClubInfo();
+    },
+
+    async loadReports() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.reportsLoading = true; this.reportsError = "";
+      this.reportsSliceData = null; this.reportsSelectedLabel = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/reports/bookings?period=${this.reportsPeriod}&date=${this.reportsDate}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.reportsData = await res.json();
+      } catch (e: any) { this.reportsError = e.message || String(e); }
+      finally { this.reportsLoading = false; }
+    },
+
+    async selectSlice(row: { label: string; startDate: string; endDate: string }) {
+      if (!this.user || this.user.role !== "admin") return;
+      // Keep timeline fixed, fetch detail for clicked slice without moving the chart
+      this.reportsSelectedLabel = row.label;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/reports/bookings?period=${this.reportsPeriod}&date=${row.startDate}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        this.reportsSliceData = { period: data.period, startDate: data.startDate, endDate: data.endDate, overall: data.overall, byUser: data.byUser, cancellationsByUser: data.cancellationsByUser };
+      } catch (e: any) { this.reportsError = e.message || String(e); }
     },
 
     async loadAdminCourts() {

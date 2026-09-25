@@ -162,5 +162,14 @@
   "admin.club.address": "Address",
   "admin.club.save": "Save",
   "admin.club.saved": "Info saved",
-  "admin.club.desc": "Contact and address shown in footer"
+  "admin.club.desc": "Contact and address shown in footer",
+  "admin.reports.title": "Reports",
+  "admin.reports.weekly": "Weekly",
+  "admin.reports.monthly": "Monthly",
+  "admin.reports.yearly": "Yearly",
+  "admin.reports.overall": "Overall bookings",
+  "admin.reports.byUser": "Bookings by user",
+  "admin.reports.cancellations": "Cancellations per user",
+  "admin.reports.period": "Period",
+  "admin.reports.noData": "No data"
 }

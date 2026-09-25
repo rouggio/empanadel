@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { settingsSchema } from "../types/schemas.js";
 import { appSettings } from "../db/schema.js";
 import { eq } from "drizzle-orm";
+import { maskSettingsForAdminResponse } from "../services/notifications.js";
 
 export default async function settingsRoutes(fastify: FastifyInstance) {
   // Public club info for footer (no auth)
@@ -30,21 +31,13 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         club_name: "Green Village",
         club_phone: "3923047417",
         club_address: "",
+        notifications_enabled: false,
       });
     }
     const rows = await db.select().from(appSettings).where(eq(appSettings.id, 1));
     const s = rows[0];
-    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false, club_name: "Green Village", club_phone: "3923047417", club_address: "" });
-    return reply.send({
-      default_slot_duration_minutes: s.defaultSlotDurationMinutes,
-      booking_hold_minutes: s.bookingHoldMinutes,
-      max_advance_days: s.maxAdvanceDays,
-      min_cancel_hours: s.minCancelHours,
-      auto_approve_bookings: s.autoApproveBookings,
-      club_name: s.clubName,
-      club_phone: s.clubPhone,
-      club_address: s.clubAddress,
-    });
+    if (!s) return reply.send({ default_slot_duration_minutes: 60, booking_hold_minutes: 30, max_advance_days: 14, min_cancel_hours: 2, auto_approve_bookings: false, club_name: "Green Village", club_phone: "3923047417", club_address: "", notifications_enabled: false });
+    return reply.send(maskSettingsForAdminResponse(s));
   });
 
   fastify.put("/api/settings", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
@@ -61,8 +54,21 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
     if (parsed.data.club_name !== undefined) updates.clubName = parsed.data.club_name || null;
     if (parsed.data.club_phone !== undefined) updates.clubPhone = parsed.data.club_phone || null;
     if (parsed.data.club_address !== undefined) updates.clubAddress = parsed.data.club_address || null;
+    if (parsed.data.notifications_enabled !== undefined) updates.notificationsEnabled = parsed.data.notifications_enabled;
+    // Tokens: if masked value (contains ***) or same as present, ignore to avoid overwriting with masked placeholder
+    if (parsed.data.telegram_bot_token !== undefined) {
+      const v = parsed.data.telegram_bot_token;
+      if (v && v.includes("***")) { /* keep existing */ } else updates.telegramBotToken = v || null;
+    }
+    if (parsed.data.telegram_admin_chat_id !== undefined) updates.telegramAdminChatId = parsed.data.telegram_admin_chat_id || null;
+    if (parsed.data.whatsapp_token !== undefined) {
+      const v = parsed.data.whatsapp_token;
+      if (v && v.includes("***")) { /* keep existing */ } else updates.whatsappToken = v || null;
+    }
+    if (parsed.data.whatsapp_phone_number_id !== undefined) updates.whatsappPhoneNumberId = parsed.data.whatsapp_phone_number_id || null;
+    if (parsed.data.whatsapp_admin_phone !== undefined) updates.whatsappAdminPhone = parsed.data.whatsapp_admin_phone || null;
     updates.updatedAt = new Date();
     const [row] = await db.update(appSettings).set(updates).where(eq(appSettings.id, 1)).returning();
-    return reply.send(row);
+    return reply.send(maskSettingsForAdminResponse(row));
   });
 }

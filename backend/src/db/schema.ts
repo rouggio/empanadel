@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   preferredLanguage: preferredLanguageEnum("preferred_language").notNull().default("it"),
   preferredSport: courtTypeEnum("preferred_sport"),
   mobile: varchar("mobile", { length: 20 }),
+  telegramChatId: varchar("telegram_chat_id", { length: 100 }),
   gender: genderEnum("gender"),
   birthdate: date("birthdate"),
   isVerified: boolean("is_verified").notNull().default(false),
@@ -120,6 +121,12 @@ export const appSettings = pgTable("app_settings", {
   clubName: varchar("club_name", { length: 100 }),
   clubPhone: varchar("club_phone", { length: 30 }),
   clubAddress: varchar("club_address", { length: 200 }),
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
+  telegramBotToken: text("telegram_bot_token"),
+  telegramAdminChatId: varchar("telegram_admin_chat_id", { length: 255 }),
+  whatsappToken: text("whatsapp_token"),
+  whatsappPhoneNumberId: varchar("whatsapp_phone_number_id", { length: 50 }),
+  whatsappAdminPhone: varchar("whatsapp_admin_phone", { length: 30 }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

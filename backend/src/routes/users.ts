@@ -11,7 +11,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     const authUser = (req as any).user;
     if (maybeDb) {
       const rows = await maybeDb.select().from(users).where(eq(users.id, authUser.id)).limit(1);
-      if (rows[0]) return { id: rows[0].id, username: rows[0].username, email: rows[0].email, role: rows[0].role, preferred_language: rows[0].preferredLanguage, preferred_sport: rows[0].preferredSport, first_name: rows[0].firstName, last_name: rows[0].lastName, mobile: rows[0].mobile, gender: rows[0].gender, birthdate: rows[0].birthdate };
+      if (rows[0]) return { id: rows[0].id, username: rows[0].username, email: rows[0].email, role: rows[0].role, preferred_language: rows[0].preferredLanguage, preferred_sport: rows[0].preferredSport, first_name: rows[0].firstName, last_name: rows[0].lastName, mobile: rows[0].mobile, telegram_chat_id: rows[0].telegramChatId, gender: rows[0].gender, birthdate: rows[0].birthdate };
     }
     return authUser;
   });
@@ -31,13 +31,14 @@ export default async function userRoutes(fastify: FastifyInstance) {
     if (body.preferred_language) updates.preferredLanguage = body.preferred_language;
     if (body.preferred_sport !== undefined) updates.preferredSport = body.preferred_sport || null;
     if (body.mobile !== undefined) updates.mobile = body.mobile || null;
+    if (body.telegram_chat_id !== undefined) updates.telegramChatId = body.telegram_chat_id || null;
     if (body.gender !== undefined) updates.gender = body.gender;
     if (body.birthdate !== undefined) updates.birthdate = body.birthdate || null;
     if (Object.keys(updates).length === 0) return reply.status(400).send({ error: "No fields to update" });
     updates.updatedAt = new Date();
     try {
       const [row] = await db.update(users).set(updates).where(eq(users.id, user.id)).returning();
-      return reply.send({ id: row.id, username: row.username, email: row.email, preferred_language: row.preferredLanguage, preferred_sport: row.preferredSport, first_name: row.firstName, last_name: row.lastName, mobile: row.mobile, gender: row.gender, birthdate: row.birthdate });
+      return reply.send({ id: row.id, username: row.username, email: row.email, preferred_language: row.preferredLanguage, preferred_sport: row.preferredSport, first_name: row.firstName, last_name: row.lastName, mobile: row.mobile, telegram_chat_id: row.telegramChatId, gender: row.gender, birthdate: row.birthdate });
     } catch (e: any) {
       if (String(e.code) === "23505") return reply.status(409).send({ error: "username or email already taken" });
       throw e;
@@ -56,7 +57,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     if (role && ["visitor","associate","admin"].includes(role)) {
       rows = rows.filter((r: any) => r.role === role);
     }
-    return reply.send(rows.map((r: any) => ({ id: r.id, username: r.username, email: r.email, role: r.role, preferred_language: r.preferredLanguage, preferred_sport: r.preferredSport, first_name: r.firstName, last_name: r.lastName, mobile: r.mobile, gender: r.gender, birthdate: r.birthdate })));
+    return reply.send(rows.map((r: any) => ({ id: r.id, username: r.username, email: r.email, role: r.role, preferred_language: r.preferredLanguage, preferred_sport: r.preferredSport, first_name: r.firstName, last_name: r.lastName, mobile: r.mobile, telegram_chat_id: r.telegramChatId, gender: r.gender, birthdate: r.birthdate })));
   });
 
   fastify.patch("/api/users/:id/role", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
@@ -122,6 +123,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     if (body.preferred_language) updates.preferredLanguage = body.preferred_language;
     if (body.preferred_sport !== undefined) updates.preferredSport = body.preferred_sport || null;
     if (body.mobile !== undefined) updates.mobile = body.mobile || null;
+    if (body.telegram_chat_id !== undefined) updates.telegramChatId = body.telegram_chat_id || null;
     if (body.gender !== undefined) updates.gender = body.gender;
     if (body.birthdate !== undefined) updates.birthdate = body.birthdate || null;
     if (role && ["visitor","associate","admin"].includes(role)) updates.role = role;

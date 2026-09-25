@@ -42,7 +42,9 @@ function app() {
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
-    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
+    notificationForm: { notifications_enabled: false, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
+    notificationTestResult: "" as string,
     reportsPeriod: "weekly" as "weekly" | "monthly" | "yearly",
     reportsDate: new Date().toISOString().slice(0, 10) as string,
     reportsLoading: false as boolean,
@@ -61,7 +63,7 @@ function app() {
     adminCourtSuccess: "" as string,
     adminCourtForm: { number: null as number | null, type: "tennis" as "tennis" | "padel", name: "", surface: "" } as { number: number | null; type: "tennis" | "padel"; name: string; surface: string },
     editingCourtId: null as string | null,
-    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
@@ -140,6 +142,7 @@ function app() {
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
         if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
+        if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -151,6 +154,7 @@ function app() {
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
       if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
+      if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
     },
 
     isPastSlot(slot: { start: string }): boolean {
@@ -509,8 +513,42 @@ function app() {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) this.adminSettings = await res.json();
+        if (res.ok) {
+          this.adminSettings = await res.json();
+          this.notificationForm = {
+            notifications_enabled: !!this.adminSettings.notifications_enabled,
+            telegram_bot_token: "",
+            telegram_admin_chat_id: this.adminSettings.telegram_admin_chat_id || "",
+            whatsapp_token: "",
+            whatsapp_phone_number_id: this.adminSettings.whatsapp_phone_number_id || "",
+            whatsapp_admin_phone: this.adminSettings.whatsapp_admin_phone || "",
+          };
+        }
       } catch {}
+    },
+    async saveNotificationSettings() {
+      const token = localStorage.getItem("token");
+      const payload: any = {
+        notifications_enabled: this.notificationForm.notifications_enabled,
+        telegram_admin_chat_id: this.notificationForm.telegram_admin_chat_id || null,
+        whatsapp_phone_number_id: this.notificationForm.whatsapp_phone_number_id || null,
+        whatsapp_admin_phone: this.notificationForm.whatsapp_admin_phone || null,
+      };
+      if (this.notificationForm.telegram_bot_token) payload.telegram_bot_token = this.notificationForm.telegram_bot_token;
+      if (this.notificationForm.whatsapp_token) payload.whatsapp_token = this.notificationForm.whatsapp_token;
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.notificationTestResult = "Save failed: " + await res.text(); return; }
+      this.adminSettings = await res.json();
+      this.notificationForm.telegram_bot_token = "";
+      this.notificationForm.whatsapp_token = "";
+      this.notificationTestResult = "Saved.";
+    },
+    async testNotification(channel: string) {
+      this.notificationTestResult = "Sending...";
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/notifications/test", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ channel }) });
+      const data = await res.json().catch(() => ({}));
+      this.notificationTestResult = JSON.stringify(data, null, 2);
     },
 
     async toggleAutoApprove() {
@@ -879,6 +917,7 @@ function app() {
           first_name: me.first_name || me.firstName || "",
           last_name: me.last_name || me.lastName || "",
           mobile: me.mobile || "",
+          telegram_chat_id: me.telegram_chat_id || me.telegramChatId || "",
           gender: me.gender || "",
           birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
           preferred_language: me.preferred_language || me.preferredLanguage || this.lang,
@@ -898,6 +937,7 @@ function app() {
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
       if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;
+      if (this.profileForm.telegram_chat_id !== undefined) payload.telegram_chat_id = this.profileForm.telegram_chat_id || null;
       if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
       if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
       if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;

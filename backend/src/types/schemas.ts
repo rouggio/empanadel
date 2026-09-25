@@ -68,6 +68,7 @@ export const profileSchema = z.object({
   preferred_language: preferredLanguageSchema.optional(),
   preferred_sport: z.enum(["tennis", "padel"]).optional().nullable(),
   mobile: z.string().max(20).optional().nullable(),
+  telegram_chat_id: z.string().max(100).optional().nullable(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional().nullable(),
   birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   first_name: z.string().min(1).max(100).optional(),
@@ -83,6 +84,12 @@ export const settingsSchema = z.object({
   club_name: z.string().max(100).optional().nullable(),
   club_phone: z.string().max(30).optional().nullable(),
   club_address: z.string().max(200).optional().nullable(),
+  notifications_enabled: z.boolean().optional(),
+  telegram_bot_token: z.string().max(500).optional().nullable(),
+  telegram_admin_chat_id: z.string().max(255).optional().nullable(),
+  whatsapp_token: z.string().max(2000).optional().nullable(),
+  whatsapp_phone_number_id: z.string().max(50).optional().nullable(),
+  whatsapp_admin_phone: z.string().max(30).optional().nullable(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

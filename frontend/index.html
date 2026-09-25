@@ -22,6 +22,7 @@
   <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
   <a href="#admin-club" class="hover:text-black" x-text="t('admin.club.title')"></a>
   <a href="#admin-reports" class="hover:text-black" x-text="t('admin.reports.title')"></a>
+  <a href="#admin-notifications" class="hover:text-black">Notifications</a>
   </div>
   </template>
    </nav>
@@ -29,12 +30,13 @@
    <div x-show="user?.role==='admin'" class="md:hidden relative">
    <button @click="adminMobileOpen=!adminMobileOpen" class="flex items-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-medium">Admin <span x-text="adminMobileOpen ? '▲' : '▼'"></span></button>
    <div x-show="adminMobileOpen" @click.outside="adminMobileOpen=false" class="absolute left-0 top-10 mt-1 w-56 rounded-lg border bg-white shadow-lg z-50 overflow-hidden">
-   <a href="#admin-courts" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.courts')"></a>
-   <a href="#admin-users" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.users')"></a>
-   <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
-   <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
-   <a href="#admin-club" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.club.title')"></a>
-   <a href="#admin-reports" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.reports.title')"></a>
+    <a href="#admin-courts" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.courts')"></a>
+    <a href="#admin-users" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.users')"></a>
+    <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
+    <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
+    <a href="#admin-club" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.club.title')"></a>
+    <a href="#admin-reports" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.reports.title')"></a>
+    <a href="#admin-notifications" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50">Notifications</a>
    </div>
    </div>
   <div class="flex items-center gap-2">
@@ -254,8 +256,10 @@
  <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  </div>
- <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
- <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
+  <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <input x-model="profileForm.telegram_chat_id" placeholder="Telegram chat ID" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <p class="text-[11px] text-zinc-500">Get your chat ID by messaging your bot and checking getUpdates. Leave empty if you only use WhatsApp.</p>
+  <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
  <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
  <option value="male" x-text="t('profile.gender.male')"></option>
  <option value="female" x-text="t('profile.gender.female')"></option>
@@ -623,6 +627,32 @@
    </div>
    </template>
    </section>
+
+  <section x-show="view==='admin-notifications'" class="mx-auto max-w-2xl space-y-4 rounded-xl border bg-white p-6" x-init="if(user?.role==='admin') loadAdminSettings()">
+  <h2 class="text-xl font-bold">Notifications — WhatsApp & Telegram</h2>
+  <p class="text-xs text-zinc-500">Admin pending → notify admin · Approval/rejection → notify user. Uses Meta WhatsApp Cloud API and Telegram Bot API. Enable here, then fill credentials below. You can also set via Render env vars as fallback.</p>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notifications_enabled" /> Enable notifications</label>
+  <div class="space-y-3 border-t pt-4">
+  <h3 class="font-semibold text-sm">Telegram (Bot)</h3>
+  <p class="text-xs text-zinc-500">Create bot via @BotFather → copy token. Get your chat ID: message the bot, then open https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates and copy chat.id. For multiple admins, comma-separated.</p>
+  <input x-model="notificationForm.telegram_bot_token" placeholder="Telegram Bot Token (leave empty to keep saved)" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <p x-show="adminSettings?.telegram_bot_token_present" class="text-xs text-emerald-600">Saved token: <span x-text="adminSettings?.telegram_bot_token"></span></p>
+  <input x-model="notificationForm.telegram_admin_chat_id" placeholder="Telegram Admin Chat ID(s), e.g. 123456789 or 123,456" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <button @click="testNotification('telegram')" class="rounded-lg border bg-white px-3 py-1 text-xs">Test Telegram</button>
+  </div>
+  <div class="space-y-3 border-t pt-4">
+  <h3 class="font-semibold text-sm">WhatsApp — Meta Cloud API</h3>
+  <p class="text-xs text-zinc-500">In Meta for Developers → WhatsApp → API Setup: copy Phone Number ID + generate permanent System User token (whatsapp_business_messaging). Recipient must have WhatsApp opted-in.</p>
+  <input x-model="notificationForm.whatsapp_token" placeholder="WhatsApp Token (leave empty to keep saved)" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <p x-show="adminSettings?.whatsapp_token_present" class="text-xs text-emerald-600">Saved WhatsApp token present</p>
+  <input x-model="notificationForm.whatsapp_phone_number_id" placeholder="WhatsApp Phone Number ID" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <input x-model="notificationForm.whatsapp_admin_phone" placeholder="Admin WhatsApp phone E.164, e.g. 393923047417" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <p class="text-xs text-zinc-500">Users are notified on their <em>mobile</em> field as WhatsApp number, and on <em>telegram_chat_id</em> if set in Profile.</p>
+  <button @click="testNotification('whatsapp')" class="rounded-lg border bg-white px-3 py-1 text-xs">Test WhatsApp</button>
+  </div>
+  <button @click="saveNotificationSettings()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium">Save notifications</button>
+  <pre x-show="notificationTestResult" class="text-xs bg-zinc-50 border rounded p-2 whitespace-pre-wrap break-all" x-text="notificationTestResult"></pre>
+  </section>
    </main>
 
    <footer class="site-footer px-4 py-4 text-center text-xs text-zinc-500" x-text="clubInfo ? `${clubInfo.club_name || 'Green Village'} - tel. ${clubInfo.club_phone || '3923047417'}${clubInfo.club_address ? ' - ' + clubInfo.club_address : ''}` : t('footer')"></footer>

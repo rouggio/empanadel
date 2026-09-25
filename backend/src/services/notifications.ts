@@ -41,8 +41,10 @@ export async function sendTelegramMessage(botToken: string, chatId: string, text
 
 export async function sendWhatsAppMessage(phoneNumberId: string, token: string, to: string, text: string): Promise<boolean> {
   if (!phoneNumberId || !token || !to) return false;
-  // Normalize "to": keep digits and +, Meta expects E.164 without +? Both work, send without + prefix but with country code
-  const normalized = to.replace(/[^\d]/g, "");
+  // Normalize "to": keep digits, strip leading 00/0 (Meta expects E.164 without +/00, e.g. 393923047417 not 00393...)
+  let normalized = to.replace(/[^\d]/g, "");
+  if (normalized.startsWith("00")) normalized = normalized.slice(2);
+  else if (normalized.startsWith("0")) normalized = normalized.slice(1);
   if (!normalized) return false;
   try {
     const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;

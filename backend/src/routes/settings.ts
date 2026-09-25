@@ -67,8 +67,13 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
       const v = parsed.data.whatsapp_token;
       if (v && v.includes("***")) { /* keep existing */ } else updates.whatsappToken = v || null;
     }
-    if (parsed.data.whatsapp_phone_number_id !== undefined) updates.whatsappPhoneNumberId = parsed.data.whatsapp_phone_number_id || null;
-    if (parsed.data.whatsapp_admin_phone !== undefined) updates.whatsappAdminPhone = parsed.data.whatsapp_admin_phone || null;
+    if (parsed.data.whatsapp_phone_number_id !== undefined) updates.whatsappPhoneNumberId = parsed.data.whatsapp_phone_number_id ? String(parsed.data.whatsapp_phone_number_id).replace(/[^\d]/g,"") : null;
+    if (parsed.data.whatsapp_admin_phone !== undefined) {
+      let v: string | null = parsed.data.whatsapp_admin_phone ? String(parsed.data.whatsapp_admin_phone).replace(/[^\d]/g,"") : null;
+      if (v?.startsWith("00")) v = v.slice(2);
+      else if (v?.startsWith("0")) v = v.slice(1);
+      updates.whatsappAdminPhone = v || null;
+    }
     updates.updatedAt = new Date();
     const [row] = await db.update(appSettings).set(updates).where(eq(appSettings.id, 1)).returning();
     return reply.send(maskSettingsForAdminResponse(row));

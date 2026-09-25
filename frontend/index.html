@@ -199,11 +199,16 @@
 
  <section x-show="view==='me'" class="space-y-4">
   <h2 class="text-xl font-bold" x-text="t('myBookings.title')"></h2>
- <div class="flex gap-2">
- <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.upcoming')"></button>
- <button @click="bookingsTab='past'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.past')"></button>
- <button @click="bookingsTab='all'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='all' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('filter.all')"></button>
- </div>
+  <div class="flex flex-wrap items-center gap-2">
+  <button @click="bookingsTab='upcoming'; loadBookings()" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='upcoming' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.upcoming')"></button>
+  <button @click="bookingsTab='past'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='past' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('myBookings.past')"></button>
+  <button @click="bookingsTab='all'" class="rounded-lg px-3 py-1 text-xs" :class="bookingsTab==='all' ? 'bg-emerald-200 border border-emerald-300 text-emerald-900' : 'border bg-white'" x-text="t('filter.all')"></button>
+  <select x-show="bookingsTab==='past' || bookingsTab==='all'" x-model="bookingsPastRange" class="rounded-lg border px-3 py-1 text-xs bg-white">
+  <option value="month" x-text="t('myBookings.lastMonth')"></option>
+  <option value="3months" x-text="t('myBookings.last3Months')"></option>
+  <option value="6months" x-text="t('myBookings.last6Months')"></option>
+  </select>
+  </div>
  <p x-show="bookingsLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
  <p x-show="bookingsError" class="text-sm text-red-600" x-text="bookingsError"></p>
  <p x-show="!bookingsLoading && filteredBookings().length===0" class="rounded-xl border bg-white p-4 text-sm text-zinc-500 text-center" x-text="bookings.length===0 ? t('myBookings.hint') + ' — ' + t('myBookings.noBookings') : t('myBookings.noBookings')"></p>
@@ -636,26 +641,29 @@
    </section>
 
   <section x-show="view==='admin-notifications'" class="mx-auto max-w-2xl space-y-4 rounded-xl border bg-white p-6" x-init="if(user?.role==='admin') loadAdminSettings()">
-  <h2 class="text-xl font-bold">Notifications — WhatsApp & Telegram</h2>
-  <p class="text-xs text-zinc-500">Admin pending → notify admin · Approval/rejection → notify user. Uses Meta WhatsApp Cloud API and Telegram Bot API. Enable here, then fill credentials below. You can also set via Render env vars as fallback.</p>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notifications_enabled" /> Enable notifications</label>
+  <h2 class="text-xl font-bold" x-text="t('admin.notifications.title')"></h2>
+  <p class="text-xs text-zinc-500" x-text="t('admin.notifications.desc')"></p>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.enable')"></span></label>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_on_auto_approved" /> <span x-text="t('admin.notifications.notifyOnAutoApproved')"></span></label>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_via_telegram" /> <span x-text="t('admin.notifications.viaTelegram')"></span></label>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="notificationForm.notify_via_whatsapp" /> <span x-text="t('admin.notifications.viaWhatsapp')"></span></label>
   <div class="space-y-3 border-t pt-4">
-  <h3 class="font-semibold text-sm">Telegram (Bot)</h3>
-  <p class="text-xs text-zinc-500">Create bot via @BotFather → copy token. Get your chat ID: message the bot, then open https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates and copy chat.id. For multiple admins, comma-separated.</p>
-  <input x-model="notificationForm.telegram_bot_token" placeholder="Telegram Bot Token (leave empty to keep saved)" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
-  <p x-show="adminSettings?.telegram_bot_token_present" class="text-xs text-emerald-600">Saved token: <span x-text="adminSettings?.telegram_bot_token"></span></p>
-  <input x-model="notificationForm.telegram_admin_chat_id" placeholder="Telegram Admin Chat ID(s), e.g. 123456789 or 123,456" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <button @click="testNotification('telegram')" class="rounded-lg border bg-white px-3 py-1 text-xs">Test Telegram</button>
+  <h3 class="font-semibold text-sm" x-text="t('admin.notifications.telegram.title')"></h3>
+  <p class="text-xs text-zinc-500" x-text="t('admin.notifications.telegram.desc')"></p>
+  <input x-model="notificationForm.telegram_bot_token" :placeholder="t('admin.notifications.telegram.tokenPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <p x-show="adminSettings?.telegram_bot_token_present" class="text-xs text-emerald-600"><span x-text="t('admin.notifications.telegram.saved')"></span><span x-text="adminSettings?.telegram_bot_token"></span></p>
+  <input x-model="notificationForm.telegram_admin_chat_id" :placeholder="t('admin.notifications.telegram.chatIdPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <button @click="testNotification('telegram')" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('admin.notifications.telegram.test')"></button>
   </div>
   <div class="space-y-3 border-t pt-4">
-  <h3 class="font-semibold text-sm">WhatsApp — Meta Cloud API</h3>
-  <p class="text-xs text-zinc-500">In Meta for Developers → WhatsApp → API Setup: copy Phone Number ID + generate permanent System User token (whatsapp_business_messaging). Recipient must have WhatsApp opted-in.</p>
-  <input x-model="notificationForm.whatsapp_token" placeholder="WhatsApp Token (leave empty to keep saved)" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
-  <p x-show="adminSettings?.whatsapp_token_present" class="text-xs text-emerald-600">Saved WhatsApp token present</p>
-  <input x-model="notificationForm.whatsapp_phone_number_id" placeholder="WhatsApp Phone Number ID" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
-  <input x-model="notificationForm.whatsapp_admin_phone" placeholder="Admin WhatsApp phone E.164, e.g. 393923047417" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <p class="text-xs text-zinc-500">Users are notified on their <em>mobile</em> field as WhatsApp number, and on <em>telegram_chat_id</em> if set in Profile.</p>
-  <button @click="testNotification('whatsapp')" class="rounded-lg border bg-white px-3 py-1 text-xs">Test WhatsApp</button>
+  <h3 class="font-semibold text-sm" x-text="t('admin.notifications.whatsapp.title')"></h3>
+  <p class="text-xs text-zinc-500" x-text="t('admin.notifications.whatsapp.desc')"></p>
+  <input x-model="notificationForm.whatsapp_token" :placeholder="t('admin.notifications.whatsapp.tokenPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <p x-show="adminSettings?.whatsapp_token_present" class="text-xs text-emerald-600" x-text="t('admin.notifications.whatsapp.saved')"></p>
+  <input x-model="notificationForm.whatsapp_phone_number_id" :placeholder="t('admin.notifications.whatsapp.phoneIdPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+  <input x-model="notificationForm.whatsapp_admin_phone" :placeholder="t('admin.notifications.whatsapp.adminPhonePlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <p class="text-xs text-zinc-500" x-text="t('admin.notifications.whatsapp.usersHint')"></p>
+  <button @click="testNotification('whatsapp')" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('admin.notifications.whatsapp.test')"></button>
   </div>
   <button @click="saveNotificationSettings()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium">Save notifications</button>
   <pre x-show="notificationTestResult" class="text-xs bg-zinc-50 border rounded p-2 whitespace-pre-wrap break-all" x-text="notificationTestResult"></pre>

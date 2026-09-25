@@ -76,13 +76,27 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
       .insert(bookings)
       .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any, notes: notes ?? null, rentRacquets: rent_racquets ?? 0, players: playersVal, reviewedBy: user.role === "admin" ? user.id : null })
       .returning();
-    // Notify admin if pending approval (fire-and-forget, don't block response)
+    // Notifications (fire-and-forget, localized per recipient)
     if (status === "pending_approval") {
       try {
         const { notifyAdminPendingBooking } = await import("../services/notifications.js");
-        // don't await blocking — run in background
         notifyAdminPendingBooking(db, row).catch(() => {});
       } catch {}
+    } else if (status === "approved") {
+      const s = settings[0] as any;
+      if (s?.notifyOnAutoApproved) {
+        try {
+          const { notifyAdminPendingBooking } = await import("../services/notifications.js");
+          notifyAdminPendingBooking(db, row).catch(() => {});
+        } catch {}
+      }
+      // User auto-approved — localized to user's language (skip admin self-bookings)
+      if (user.role !== "admin") {
+        try {
+          const { notifyUserBookingDecision } = await import("../services/notifications.js");
+          notifyUserBookingDecision(db, row, "approved").catch(() => {});
+        } catch {}
+      }
     }
     return reply.status(201).send(row);
   });

@@ -29,6 +29,7 @@ function app() {
     authError: "" as string,
     bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; notes?: string; rentRacquets?: number; players?: number; courtNumber?: number; courtType?: string; courtName?: string }>,
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
+    bookingsPastRange: "month" as "month" | "3months" | "6months",
     bookingsLoading: false as boolean,
     bookingsError: "" as string,
     adminBookings: [] as Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string; username?: string; notes?: string; rentRacquets?: number; players?: number }>,
@@ -43,8 +44,8 @@ function app() {
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
     adminHighlightId: null as string | null,
-    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
-    notificationForm: { notifications_enabled: false, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
+    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; notify_on_auto_approved?: boolean; notify_via_telegram?: boolean; notify_via_whatsapp?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
+    notificationForm: { notifications_enabled: false, notify_on_auto_approved: false, notify_via_telegram: true, notify_via_whatsapp: true, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; notify_on_auto_approved: boolean; notify_via_telegram: boolean; notify_via_whatsapp: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
     notificationTestResult: "" as string,
     reportsPeriod: "weekly" as "weekly" | "monthly" | "yearly",
     reportsDate: new Date().toISOString().slice(0, 10) as string,
@@ -418,9 +419,20 @@ function app() {
 
     filteredBookings() {
       const today = new Date().toISOString().slice(0, 10);
-      if (this.bookingsTab === "all") return this.bookings;
+      const cutoffFor = (range: string) => {
+        const d = new Date(); if (range === "month") d.setMonth(d.getMonth() - 1); else if (range === "3months") d.setMonth(d.getMonth() - 3); else if (range === "6months") d.setMonth(d.getMonth() - 6);
+        return d.toISOString().slice(0,10);
+      };
+      if (this.bookingsTab === "all") {
+        const cutoff = cutoffFor(this.bookingsPastRange);
+        return this.bookings.filter((b) => b.date >= cutoff);
+      }
       if (this.bookingsTab === "upcoming") return this.bookings.filter((b) => b.date >= today && !["cancelled","rejected","expired"].includes(b.status));
-      return this.bookings.filter((b) => b.date < today || ["cancelled","rejected","expired"].includes(b.status));
+      // past tab with range filter
+      let past = this.bookings.filter((b) => b.date < today || ["cancelled","rejected","expired"].includes(b.status));
+      const cutoff = cutoffFor(this.bookingsPastRange);
+      past = past.filter((b) => b.date >= cutoff);
+      return past;
     },
 
     courtLabel(b: any): string {
@@ -524,6 +536,9 @@ function app() {
           this.adminSettings = await res.json();
           this.notificationForm = {
             notifications_enabled: !!this.adminSettings.notifications_enabled,
+            notify_on_auto_approved: !!this.adminSettings.notify_on_auto_approved,
+            notify_via_telegram: this.adminSettings.notify_via_telegram ?? true,
+            notify_via_whatsapp: this.adminSettings.notify_via_whatsapp ?? true,
             telegram_bot_token: "",
             telegram_admin_chat_id: this.adminSettings.telegram_admin_chat_id || "",
             whatsapp_token: "",
@@ -537,6 +552,9 @@ function app() {
       const token = localStorage.getItem("token");
       const payload: any = {
         notifications_enabled: this.notificationForm.notifications_enabled,
+        notify_on_auto_approved: this.notificationForm.notify_on_auto_approved,
+        notify_via_telegram: this.notificationForm.notify_via_telegram,
+        notify_via_whatsapp: this.notificationForm.notify_via_whatsapp,
         telegram_admin_chat_id: this.notificationForm.telegram_admin_chat_id || null,
         whatsapp_phone_number_id: this.notificationForm.whatsapp_phone_number_id || null,
         whatsapp_admin_phone: this.notificationForm.whatsapp_admin_phone || null,

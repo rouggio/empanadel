@@ -75,28 +75,122 @@ function bookingAdminUrl(bookingId: string, settings: any): string {
   return `${base}/#admin-bookings?highlight=${bookingId}`;
 }
 
-function buildAdminPendingMessage(b: any, user: any, court: any, clubName: string, settings: any): string {
+type Lang = "it" | "en" | "fr" | "de" | "es";
+const LANGS: Lang[] = ["it","en","fr","de","es"];
+function normalizeLang(v: any): Lang {
+  const s = String(v || "it").toLowerCase();
+  return (LANGS as string[]).includes(s) ? (s as Lang) : "it";
+}
+const NOTIF = {
+  it: {
+    adminPendingTitle: "Nuova prenotazione in attesa di approvazione",
+    court: "Campo",
+    when: "Quando",
+    user: "Utente",
+    notes: "Note",
+    manage: (url: string) => `per gestire la prenotazione, clicca <a href="${url}">qui</a>`,
+    managePlain: (url: string) => `per gestire la prenotazione, clicca qui: ${url}`,
+    yourBookingWas: "La tua prenotazione è stata",
+    status: "Stato",
+    approved: "approvata",
+    rejected: "rifiutata",
+    dash: "—",
+  },
+  en: {
+    adminPendingTitle: "New booking pending approval",
+    court: "Court",
+    when: "When",
+    user: "User",
+    notes: "Notes",
+    manage: (url: string) => `to manage booking, click <a href="${url}">here</a>`,
+    managePlain: (url: string) => `to manage booking, click here: ${url}`,
+    yourBookingWas: "Your booking was",
+    status: "Status",
+    approved: "approved",
+    rejected: "rejected",
+    dash: "—",
+  },
+  fr: {
+    adminPendingTitle: "Nouvelle réservation en attente d'approbation",
+    court: "Terrain",
+    when: "Quand",
+    user: "Utilisateur",
+    notes: "Notes",
+    manage: (url: string) => `pour gérer la réservation, cliquez <a href="${url}">ici</a>`,
+    managePlain: (url: string) => `pour gérer la réservation, cliquez ici : ${url}`,
+    yourBookingWas: "Votre réservation a été",
+    status: "Statut",
+    approved: "approuvée",
+    rejected: "rejetée",
+    dash: "—",
+  },
+  de: {
+    adminPendingTitle: "Neue Buchung ausstehend — Genehmigung erforderlich",
+    court: "Platz",
+    when: "Wann",
+    user: "Nutzer",
+    notes: "Notizen",
+    manage: (url: string) => `um die Buchung zu verwalten, klicke <a href="${url}">hier</a>`,
+    managePlain: (url: string) => `um die Buchung zu verwalten, klicke hier: ${url}`,
+    yourBookingWas: "Deine Buchung wurde",
+    status: "Status",
+    approved: "genehmigt",
+    rejected: "abgelehnt",
+    dash: "—",
+  },
+  es: {
+    adminPendingTitle: "Nueva reserva pendiente de aprobación",
+    court: "Pista",
+    when: "Cuándo",
+    user: "Usuario",
+    notes: "Notas",
+    manage: (url: string) => `para gestionar la reserva, haz clic <a href="${url}">aquí</a>`,
+    managePlain: (url: string) => `para gestionar la reserva, haz clic aquí: ${url}`,
+    yourBookingWas: "Tu reserva fue",
+    status: "Estado",
+    approved: "aprobada",
+    rejected: "rechazada",
+    dash: "—",
+  },
+} as const;
+
+function buildAdminPendingMessage(b: any, user: any, court: any, clubName: string, settings: any, lang: Lang): string {
+  const T = NOTIF[normalizeLang(lang)];
   const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
   const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
   const who = user ? `${user.username} (${user.firstName ?? ""} ${user.lastName ?? ""})`.trim() : b.userId;
   const rent = b.rentRacquets ? ` · ${b.rentRacquets} racquets` : "";
   const players = b.players ? ` · ${b.players} players` : "";
   const url = bookingAdminUrl(b.id, settings);
-  return `🔔 <b>${clubName}</b> — New booking pending approval\nCourt: ${courtLabel}\nWhen: ${when}${players}${rent}\nUser: ${who}\nNotes: ${b.notes || "-"}\nBooking ID: ${b.id}\nManage: ${url}\n<a href="${url}">👉 Open booking to approve/reject</a>`;
+  return `🔔 <b>${clubName}</b> ${T.dash} ${T.adminPendingTitle}\n${T.court}: ${courtLabel}\n${T.when}: ${when}${players}${rent}\n${T.user}: ${who}\n${T.notes}: ${b.notes || "-"}\n${T.manage(url)}`;
+}
+function buildAdminPendingPlain(b: any, user: any, court: any, clubName: string, settings: any, lang: Lang): string {
+  const T = NOTIF[normalizeLang(lang)];
+  const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
+  const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
+  const who = user ? `${user.username} (${user.firstName ?? ""} ${user.lastName ?? ""})`.trim() : b.userId;
+  const rent = b.rentRacquets ? ` · ${b.rentRacquets} racquets` : "";
+  const players = b.players ? ` · ${b.players} players` : "";
+  const url = bookingAdminUrl(b.id, settings);
+  return `🔔 ${clubName} ${T.dash} ${T.adminPendingTitle}\n${T.court}: ${courtLabel}\n${T.when}: ${when}${players}${rent}\n${T.user}: ${who}\n${T.notes}: ${b.notes || "-"}\n${T.managePlain(url)}`;
 }
 
-function buildUserDecisionMessage(b: any, court: any, clubName: string, decision: "approved" | "rejected"): string {
+function buildUserDecisionMessage(b: any, court: any, clubName: string, decision: "approved" | "rejected", lang: Lang): string {
+  const T = NOTIF[normalizeLang(lang)];
   const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
   const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
   const icon = decision === "approved" ? "✅" : "❌";
-  const verb = decision === "approved" ? "approved" : "rejected";
-  return `${icon} <b>${clubName}</b> — Your booking was ${verb}\nCourt: ${courtLabel}\nWhen: ${when}\nStatus: ${decision}\nBooking ID: ${b.id}`;
+  const verb = decision === "approved" ? T.approved : T.rejected;
+  return `${icon} <b>${clubName}</b> ${T.dash} ${T.yourBookingWas} ${verb}\n${T.court}: ${courtLabel}\n${T.when}: ${when}\n${T.status}: ${verb}\nBooking ID: ${b.id}`;
 }
 
 export async function notifyAdminPendingBooking(db: Db, booking: any) {
   try {
     const settings = await getNotificationSettings(db);
     if (!settings || !settings.notificationsEnabled) return;
+    // respect channel toggles
+    const viaTelegram = (settings as any).notifyViaTelegram ?? true;
+    const viaWhatsapp = (settings as any).notifyViaWhatsapp ?? true;
     const clubName = settings.clubName || "Empanadel";
     const { users, courts } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
@@ -110,25 +204,43 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
       const cRows = await db.select().from(courts).where(eq(courts.id, booking.courtId)).limit(1);
       court = cRows[0] ?? null;
     } catch {}
-    const text = buildAdminPendingMessage(booking, user, court, clubName, settings);
-
     const telegramBotToken = settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
     const telegramAdminChatId = settings.telegramAdminChatId || process.env.TELEGRAM_ADMIN_CHAT_ID || "";
     const whatsappToken = settings.whatsappToken || process.env.WHATSAPP_TOKEN || "";
     const whatsappPhoneNumberId = settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
     const whatsappAdminPhone = settings.whatsappAdminPhone || process.env.WHATSAPP_ADMIN_PHONE || "";
 
-    // Telegram to admin(s) — comma separated chat ids
-    if (telegramBotToken && telegramAdminChatId) {
+    // Telegram to admin(s) — per-recipient language
+    if (viaTelegram && telegramBotToken && telegramAdminChatId) {
       const chatIds = String(telegramAdminChatId).split(",").map((s: string) => s.trim()).filter(Boolean);
       for (const chatId of chatIds) {
-        // fire-and-forget per chat, don't await sequentially failing
+        let lang: Lang = "it";
+        try {
+          const aRows = await db.select().from(users).where(eq(users.telegramChatId, chatId)).limit(1);
+          if (aRows[0]?.preferredLanguage) lang = normalizeLang(aRows[0].preferredLanguage);
+        } catch {}
+        const text = buildAdminPendingMessage(booking, user, court, clubName, settings, lang);
         sendTelegramMessage(telegramBotToken, chatId, text).catch(() => {});
       }
     }
-    // WhatsApp to admin phone (single)
-    if (whatsappToken && whatsappPhoneNumberId && whatsappAdminPhone) {
-      const waText = text.replace(/<[^>]*>/g, ""); // strip HTML for WhatsApp
+    // WhatsApp to admin phone (single) — per-recipient language via mobile lookup
+    if (viaWhatsapp && whatsappToken && whatsappPhoneNumberId && whatsappAdminPhone) {
+      let lang: Lang = "it";
+      try {
+        let norm = whatsappAdminPhone.replace(/[^\d]/g,"");
+        if (norm.startsWith("00")) norm = norm.slice(2); else if (norm.startsWith("0")) norm = norm.slice(1);
+        const aRows = await db.select().from(users).where(eq(users.mobile, norm)).limit(1);
+        if (!aRows[0]) {
+          const all = await db.select().from(users);
+          const found = (all as any[]).find((u:any)=> {
+            let m = String(u.mobile||"").replace(/[^\d]/g,"");
+            if (m.startsWith("00")) m=m.slice(2); else if (m.startsWith("0")) m=m.slice(1);
+            return m===norm;
+          });
+          if (found?.preferredLanguage) lang = normalizeLang(found.preferredLanguage);
+        } else if (aRows[0]?.preferredLanguage) lang = normalizeLang(aRows[0].preferredLanguage);
+      } catch {}
+      const waText = buildAdminPendingPlain(booking, user, court, clubName, settings, lang);
       sendWhatsAppMessage(whatsappPhoneNumberId, whatsappToken, whatsappAdminPhone, waText).catch(() => {});
     }
   } catch (e) {
@@ -140,6 +252,8 @@ export async function notifyUserBookingDecision(db: Db, booking: any, decision: 
   try {
     const settings = await getNotificationSettings(db);
     if (!settings || !settings.notificationsEnabled) return;
+    const viaTelegram = (settings as any).notifyViaTelegram ?? true;
+    const viaWhatsapp = (settings as any).notifyViaWhatsapp ?? true;
     const clubName = settings.clubName || "Empanadel";
     const { users, courts } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
@@ -153,23 +267,22 @@ export async function notifyUserBookingDecision(db: Db, booking: any, decision: 
       const cRows = await db.select().from(courts).where(eq(courts.id, booking.courtId)).limit(1);
       court = cRows[0] ?? null;
     } catch {}
-    const text = buildUserDecisionMessage(booking, court, clubName, decision);
+    const lang = normalizeLang(user?.preferredLanguage || user?.preferred_language || "it");
+    const text = buildUserDecisionMessage(booking, court, clubName, decision, lang);
     const waText = text.replace(/<[^>]*>/g, "");
     const telegramBotToken = settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
     const whatsappToken = settings.whatsappToken || process.env.WHATSAPP_TOKEN || "";
     const whatsappPhoneNumberId = settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
 
-    // Prefer user-specific channels if present
     const promises: Promise<boolean>[] = [];
-    if (user?.telegramChatId && telegramBotToken) {
+    if (viaTelegram && user?.telegramChatId && telegramBotToken) {
       promises.push(sendTelegramMessage(telegramBotToken, user.telegramChatId, text));
     }
-    if (user?.mobile && whatsappToken && whatsappPhoneNumberId) {
+    if (viaWhatsapp && user?.mobile && whatsappToken && whatsappPhoneNumberId) {
       promises.push(sendWhatsAppMessage(whatsappPhoneNumberId, whatsappToken, user.mobile, waText));
     }
-    // If user has no contact channels, optionally fallback to no-op (could log)
     if (promises.length === 0) {
-      console.warn(`[notify] user ${booking.userId} has no telegramChatId/mobile — no channel to notify for ${decision}`);
+      console.warn(`[notify] user ${booking.userId} has no telegramChatId/mobile or channels disabled — no channel to notify for ${decision}`);
       return;
     }
     await Promise.allSettled(promises);
@@ -191,6 +304,9 @@ export function maskSettingsForAdminResponse(s: any) {
     club_address: s.clubAddress,
     public_url: s.publicUrl || "https://empanadel.onrender.com",
     notifications_enabled: s.notificationsEnabled,
+    notify_on_auto_approved: s.notifyOnAutoApproved ?? false,
+    notify_via_telegram: s.notifyViaTelegram ?? true,
+    notify_via_whatsapp: s.notifyViaWhatsapp ?? true,
     telegram_bot_token: s.telegramBotToken ? maskToken(s.telegramBotToken) : null,
     telegram_bot_token_present: !!s.telegramBotToken,
     telegram_admin_chat_id: s.telegramAdminChatId,

@@ -201,5 +201,11 @@
   "admin.notifications.save": "Save notifications",
   "admin.club.publicUrlPlaceholder": "Public URL e.g. https://empanadel.onrender.com",
   "admin.club.publicUrlHint": "Used for notification links (Telegram/WhatsApp) — must be the production URL.",
-  "admin.notifications.nav": "Notifications"
+  "admin.notifications.nav": "Notifications",
+  "admin.notifications.notifyOnAutoApproved": "Notify also for auto-approved bookings",
+  "admin.notifications.viaTelegram": "Receive notifications via Telegram",
+  "admin.notifications.viaWhatsapp": "Receive notifications via WhatsApp",
+  "myBookings.lastMonth": "last month",
+  "myBookings.last3Months": "last 3 months",
+  "myBookings.last6Months": "last 6 months"
 }

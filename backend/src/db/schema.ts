@@ -16,7 +16,7 @@ export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_n
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   username: varchar("username", { length: 30 }).notNull().unique(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).unique(),
   passwordHash: text("password_hash").notNull(),
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   preferredLanguage: preferredLanguageEnum("preferred_language").notNull().default("it"),
   preferredSport: courtTypeEnum("preferred_sport"),
   mobile: varchar("mobile", { length: 20 }),
+  telegramChatId: varchar("telegram_chat_id", { length: 100 }),
   gender: genderEnum("gender"),
   birthdate: date("birthdate"),
   isVerified: boolean("is_verified").notNull().default(false),
@@ -120,6 +121,13 @@ export const appSettings = pgTable("app_settings", {
   clubName: varchar("club_name", { length: 100 }),
   clubPhone: varchar("club_phone", { length: 30 }),
   clubAddress: varchar("club_address", { length: 200 }),
+  publicUrl: varchar("public_url", { length: 255 }),
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
+  telegramBotToken: text("telegram_bot_token"),
+  telegramAdminChatId: varchar("telegram_admin_chat_id", { length: 255 }),
+  whatsappToken: text("whatsapp_token"),
+  whatsappPhoneNumberId: varchar("whatsapp_phone_number_id", { length: 50 }),
+  whatsappAdminPhone: varchar("whatsapp_admin_phone", { length: 30 }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -129,5 +137,12 @@ export const auditLog = pgTable("audit_log", {
   action: varchar("action", { length: 50 }).notNull(),
   target: varchar("target", { length: 100 }).notNull(),
   meta: text("meta"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const telegramLinkTokens = pgTable("telegram_link_tokens", {
+  token: varchar("token", { length: 64 }).primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

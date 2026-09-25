@@ -76,6 +76,14 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
       .insert(bookings)
       .values({ courtId: court_id, userId: user.id, date, startTime: start_time, endTime, status: status as any, notes: notes ?? null, rentRacquets: rent_racquets ?? 0, players: playersVal, reviewedBy: user.role === "admin" ? user.id : null })
       .returning();
+    // Notify admin if pending approval (fire-and-forget, don't block response)
+    if (status === "pending_approval") {
+      try {
+        const { notifyAdminPendingBooking } = await import("../services/notifications.js");
+        // don't await blocking — run in background
+        notifyAdminPendingBooking(db, row).catch(() => {});
+      } catch {}
+    }
     return reply.status(201).send(row);
   });
 
@@ -117,6 +125,10 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     const { id } = req.params as any;
     const [row] = await db.update(bookings).set({ status: "approved" as any, reviewedBy: (req as any).user.id }).where(eq(bookings.id, id)).returning();
     if (!row) return reply.status(404).send({ error: "Not found" });
+    try {
+      const { notifyUserBookingDecision } = await import("../services/notifications.js");
+      notifyUserBookingDecision(db, row, "approved").catch(() => {});
+    } catch {}
     return reply.send(row);
   });
 
@@ -126,6 +138,10 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     const { id } = req.params as any;
     const [row] = await db.update(bookings).set({ status: "rejected" as any, reviewedBy: (req as any).user.id }).where(eq(bookings.id, id)).returning();
     if (!row) return reply.status(404).send({ error: "Not found" });
+    try {
+      const { notifyUserBookingDecision } = await import("../services/notifications.js");
+      notifyUserBookingDecision(db, row, "rejected").catch(() => {});
+    } catch {}
     return reply.send(row);
   });
 

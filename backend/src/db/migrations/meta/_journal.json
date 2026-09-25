@@ -50,6 +50,34 @@
       "when": 1790320000000,
       "tag": "0006_club_info",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790400000000,
+      "tag": "0007_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790400001000,
+      "tag": "0008_public_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790400002000,
+      "tag": "0009_make_email_optional",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790400003000,
+      "tag": "0010_telegram_link_tokens",
+      "breakpoints": true
     }
   ]
 }

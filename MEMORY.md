@@ -30,8 +30,9 @@
 - **Never** use hard-coded `bg-white/80` or `bg-black` for primary actions — use vars.
 
 ## 4. i18n — HABIT
-- **5 langs** `it|en|fr|de|es` (`users.preferred_language` enum default `it`, `preferred_sport tennis|padel nullable`, `mobile varchar20`, `gender male|female|other|prefer_not_to_say`, `birthdate date`), `frontend/src/i18n/*.json` ~130 keys + `flagcdn.com/w20` + `frontend/src/i18n/index.ts:58` `t(key)`.
-- **Rule**: every user-visible string must be `x-text="t('key')"` or `:placeholder="t('key')"`; when adding a new label, add key to **all 5** `it|en|fr|de|es` files (keep Italian verbatim if user says "in all languages"). Weekdays `weekday.mon` etc. now full `Lunedì/Monday/...` (not `Mon`).
+- **5 langs** `it|en|fr|de|es` (`users.preferred_language` enum default `it`, `preferred_sport tennis|padel nullable`, `mobile varchar20`, `gender male|female|other|prefer_not_to_say`, `birthdate date`), `frontend/src/i18n/*.json` ~160 keys + `flagcdn.com/w20` + `frontend/src/i18n/index.ts:58` `t(key)`.
+- **Rule**: every user-visible string must be `x-text="t('key')"` or `:placeholder="t('key')"`; when adding a new label, add key to **all 5** `it|en|fr|de|es` files (keep Italian verbatim if user says "in all languages"). **No hardcoded English/French/etc. in `frontend/index.html` or `frontend/src/main.ts`** — use `t()` even for placeholders, hints, Telegram/Notifications/Admin.club. Weekdays `weekday.mon` etc. now full `Lunedì/Monday/...` (not `Mon`). `common.optional` → `facoltativo/optional/facultatif...`, `profile.preferredSport.none` → `-- tutti gli sport -- / -- all sports --` etc.
+- **Recent**: `common.optional`, `telegram.*` (`title/connected/notConnected/connect/linking/disconnect/hint`), `admin.notifications.*` (29 keys incl. `admin.notifications.nav`, `admin.club.publicUrlPlaceholder/Hint`) localised `9561dc2`.
 - **Validation**: `field.*`, `validation.*`, `error.taken/registerFailed/loginFailed`, `btn.*`, `admin.*`, `status.unavailable` etc.
 
 ## 5. Auth & Users

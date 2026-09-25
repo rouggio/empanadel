@@ -19,6 +19,8 @@ import blockRoutes from "./routes/blocks.js";
 import settingsRoutes from "./routes/settings.js";
 import userRoutes from "./routes/users.js";
 import reportsRoutes from "./routes/reports.js";
+import notificationRoutes from "./routes/notifications.js";
+import telegramRoutes from "./routes/telegram.js";
 import { createDb } from "./db/connection.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +68,8 @@ export async function buildApp() {
   await app.register(settingsRoutes);
   await app.register(userRoutes);
   await app.register(reportsRoutes);
+  await app.register(notificationRoutes);
+  await app.register(telegramRoutes);
 
   // Static — serve pre-built frontend (Vite dist) if present
   // In dev, frontend runs on Vite dev server; in production (Render single service) backend serves it.

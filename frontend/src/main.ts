@@ -42,7 +42,10 @@ function app() {
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
-    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number },
+    adminHighlightId: null as string | null,
+    adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
+    notificationForm: { notifications_enabled: false, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
+    notificationTestResult: "" as string,
     reportsPeriod: "weekly" as "weekly" | "monthly" | "yearly",
     reportsDate: new Date().toISOString().slice(0, 10) as string,
     reportsLoading: false as boolean,
@@ -54,17 +57,21 @@ function app() {
     clubInfoLoading: false as boolean,
     clubInfoError: "" as string,
     clubInfoSuccess: "" as string,
-    clubForm: { club_name: "" as string, club_phone: "" as string, club_address: "" as string } as { club_name: string; club_phone: string; club_address: string },
+    clubForm: { club_name: "" as string, club_phone: "" as string, club_address: "" as string, public_url: "https://empanadel.onrender.com" as string } as { club_name: string; club_phone: string; club_address: string; public_url: string },
     adminCourts: [] as Court[],
     adminCourtsLoading: false as boolean,
     adminCourtError: "" as string,
     adminCourtSuccess: "" as string,
     adminCourtForm: { number: null as number | null, type: "tennis" as "tennis" | "padel", name: "", surface: "" } as { number: number | null; type: "tennis" | "padel"; name: string; surface: string },
     editingCourtId: null as string | null,
-    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
+    telegramLinked: false as boolean,
+    telegramLinkUrl: "" as string,
+    telegramLinkLoading: false as boolean,
+    telegramPollTimer: null as number | null,
     editingBooking: null as string | null,
     editNotes: "" as string,
     editRent: 0 as number,
@@ -126,10 +133,12 @@ function app() {
           }
         } catch {}
       }
-      const hash = location.hash.replace("#", "");
+      const hash = location.hash.replace("#", "").split("?")[0];
       if (hash) this.view = hash;
+      this.syncHighlight();
       window.addEventListener("hashchange", () => {
-        this.view = location.hash.replace("#", "") || "home";
+        this.view = (location.hash.replace("#", "").split("?")[0]) || "home";
+        this.syncHighlight();
         if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
@@ -140,6 +149,7 @@ function app() {
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
         if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
+        if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
       });
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
@@ -151,6 +161,7 @@ function app() {
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
       if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
+      if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
     },
 
     isPastSlot(slot: { start: string }): boolean {
@@ -509,8 +520,53 @@ function app() {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) this.adminSettings = await res.json();
+        if (res.ok) {
+          this.adminSettings = await res.json();
+          this.notificationForm = {
+            notifications_enabled: !!this.adminSettings.notifications_enabled,
+            telegram_bot_token: "",
+            telegram_admin_chat_id: this.adminSettings.telegram_admin_chat_id || "",
+            whatsapp_token: "",
+            whatsapp_phone_number_id: this.adminSettings.whatsapp_phone_number_id || "",
+            whatsapp_admin_phone: this.adminSettings.whatsapp_admin_phone || "",
+          };
+        }
       } catch {}
+    },
+    async saveNotificationSettings() {
+      const token = localStorage.getItem("token");
+      const payload: any = {
+        notifications_enabled: this.notificationForm.notifications_enabled,
+        telegram_admin_chat_id: this.notificationForm.telegram_admin_chat_id || null,
+        whatsapp_phone_number_id: this.notificationForm.whatsapp_phone_number_id || null,
+        whatsapp_admin_phone: this.notificationForm.whatsapp_admin_phone || null,
+      };
+      if (this.notificationForm.telegram_bot_token) payload.telegram_bot_token = this.notificationForm.telegram_bot_token;
+      if (this.notificationForm.whatsapp_token) payload.whatsapp_token = this.notificationForm.whatsapp_token;
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+      if (!res.ok) { this.notificationTestResult = "Save failed: " + await res.text(); return; }
+      this.adminSettings = await res.json();
+      this.notificationForm.telegram_bot_token = "";
+      this.notificationForm.whatsapp_token = "";
+      this.notificationTestResult = "Saved.";
+    },
+    async testNotification(channel: string) {
+      this.notificationTestResult = "Sending...";
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/notifications/test", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ channel }) });
+      const data = await res.json().catch(() => ({}));
+      this.notificationTestResult = JSON.stringify(data, null, 2);
+    },
+    syncHighlight() {
+      const hash = location.hash || "";
+      const q = hash.includes("?") ? hash.split("?")[1] : "";
+      const h = new URLSearchParams(q).get("highlight");
+      this.adminHighlightId = h || null;
+      if (h && this.view === "admin-bookings" && this.adminFilter !== "") {
+        // ensure highlighted booking visible even if filter is pending_approval
+        this.adminFilter = "";
+        // will reload on next loadAdminBookings call — caller handles
+      }
     },
 
     async toggleAutoApprove() {
@@ -539,7 +595,7 @@ function app() {
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const s = await res.json();
-          this.clubForm = { club_name: s.club_name || "", club_phone: s.club_phone || "", club_address: s.club_address || "" };
+          this.clubForm = { club_name: s.club_name || "", club_phone: s.club_phone || "", club_address: s.club_address || "", public_url: s.public_url || "https://empanadel.onrender.com" };
           this.clubInfo = { club_name: s.club_name, club_phone: s.club_phone, club_address: s.club_address };
         }
       } catch (e: any) { this.clubInfoError = e.message || String(e); }
@@ -548,7 +604,7 @@ function app() {
     async saveClubInfo() {
       this.clubInfoError = ""; this.clubInfoSuccess = "";
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null }) });
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ club_name: this.clubForm.club_name || null, club_phone: this.clubForm.club_phone || null, club_address: this.clubForm.club_address || null, public_url: this.clubForm.public_url || null }) });
       if (!res.ok) { this.clubInfoError = await res.text(); return; }
       this.clubInfoSuccess = this.t("admin.club.saved");
       await this.loadClubInfo();
@@ -788,7 +844,7 @@ function app() {
 
     async createAdminUser() {
       this.adminUsersError = ""; this.adminUserSuccess = "";
-      if (!this.adminUserForm.username || !this.adminUserForm.email || !this.adminUserForm.password || !this.adminUserForm.first_name || !this.adminUserForm.last_name) { this.adminUsersError = "Username, email, password, first/last name required"; return; }
+      if (!this.adminUserForm.username || !this.adminUserForm.password || !this.adminUserForm.first_name || !this.adminUserForm.last_name) { this.adminUsersError = "Username, password, first/last name required (email optional)"; return; }
       const token = localStorage.getItem("token");
       const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ username: this.adminUserForm.username, email: this.adminUserForm.email, password: this.adminUserForm.password, first_name: this.adminUserForm.first_name, last_name: this.adminUserForm.last_name, role: this.adminUserForm.role, preferred_language: "it" }) });
       if (!res.ok) { this.adminUsersError = await res.text(); return; }
@@ -879,12 +935,14 @@ function app() {
           first_name: me.first_name || me.firstName || "",
           last_name: me.last_name || me.lastName || "",
           mobile: me.mobile || "",
+          telegram_chat_id: me.telegram_chat_id || me.telegramChatId || "",
           gender: me.gender || "",
           birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
           preferred_language: me.preferred_language || me.preferredLanguage || this.lang,
           preferred_sport: me.preferred_sport || me.preferredSport || "",
         };
         this.user = me;
+        await this.checkTelegramStatus();
       } catch (e: any) { this.profileError = e.message || String(e); }
       finally { this.profileLoading = false; }
     },
@@ -894,7 +952,7 @@ function app() {
       const token = localStorage.getItem("token");
       const payload: any = {};
       if (this.profileForm.username) payload.username = this.profileForm.username;
-      if (this.profileForm.email) payload.email = this.profileForm.email;
+      payload.email = this.profileForm.email ? this.profileForm.email : null;
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
       if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;
@@ -912,6 +970,47 @@ function app() {
         if (this.view === "courts") this.loadAvailability();
       }
       this.user = { ...this.user, ...updated };
+      await this.checkTelegramStatus();
+    },
+    async checkTelegramStatus() {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) { this.telegramLinked = false; return; }
+        const res = await fetch("/api/telegram/status", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const j = await res.json();
+          this.telegramLinked = !!j.linked;
+        }
+      } catch { this.telegramLinked = false; }
+    },
+    async createTelegramLink() {
+      this.telegramLinkLoading = true;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/telegram/link", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        const j = await res.json();
+        this.telegramLinkUrl = j.url;
+        window.open(j.url, "_blank");
+        // poll status every 3s for 2 minutes
+        if (this.telegramPollTimer) clearInterval(this.telegramPollTimer);
+        let attempts = 0;
+        this.telegramPollTimer = window.setInterval(async () => {
+          attempts++;
+          await this.checkTelegramStatus();
+          if (this.telegramLinked || attempts > 40) {
+            if (this.telegramPollTimer) clearInterval(this.telegramPollTimer);
+            this.telegramPollTimer = null;
+            if (this.telegramLinked) this.telegramLinkUrl = "";
+          }
+        }, 3000);
+      } catch (e: any) { this.profileError = e.message || String(e); }
+      finally { this.telegramLinkLoading = false; }
+    },
+    async unlinkTelegram() {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/telegram/unlink", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) { this.telegramLinked = false; this.telegramLinkUrl = ""; }
     },
 
     startEditBooking(b: any) {

@@ -688,7 +688,13 @@
   <label class="flex items-center gap-2 text-sm" :class="!notificationForm.notifications_enabled ? 'opacity-50' : ''"><input type="checkbox" x-model="notificationForm.notify_via_whatsapp" :disabled="!notificationForm.notifications_enabled" /> <span x-text="t('admin.notifications.viaWhatsapp')"></span></label>
   <div class="space-y-3 border-t pt-4">
   <h3 class="font-semibold text-sm" x-text="t('admin.notifications.telegram.title')"></h3>
-  <p class="text-xs text-zinc-500" x-text="t('admin.notifications.telegram.desc')"></p>
+  <div class="rounded-lg border p-3 space-y-2 bg-zinc-50">
+  <div class="flex items-center justify-between text-sm"><span class="font-medium" x-text="t('admin.notifications.telegram.subscribeTitle')"></span><span class="text-xs" :class="telegramLinked ? 'text-emerald-600' : 'text-zinc-500'" x-text="telegramLinked ? t('telegram.connected') : t('telegram.notConnected')"></span></div>
+  <p class="text-[11px] text-zinc-500" x-text="t('admin.notifications.telegram.subscribeDesc')"></p>
+  <button x-show="!telegramLinked" @click="createTelegramLink()" :disabled="telegramLinkLoading" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 py-2 text-xs font-medium" x-text="telegramLinkLoading ? t('telegram.linking') : t('telegram.connect')"></button>
+  <button x-show="telegramLinked" @click="unlinkTelegram()" class="w-full rounded-lg border bg-white py-2 text-xs" x-text="t('telegram.disconnect')"></button>
+  <p x-show="telegramLinkUrl" class="text-xs break-all"><a :href="telegramLinkUrl" target="_blank" class="underline text-emerald-700" x-text="telegramLinkUrl"></a></p>
+  </div>
   <input x-model="notificationForm.telegram_bot_token" :placeholder="t('admin.notifications.telegram.tokenPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
   <p x-show="adminSettings?.telegram_bot_token_present" class="text-xs text-emerald-600"><span x-text="t('admin.notifications.telegram.saved')"></span><span x-text="adminSettings?.telegram_bot_token"></span></p>
   <input x-model="notificationForm.telegram_admin_chat_id" :placeholder="t('admin.notifications.telegram.chatIdPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm" />

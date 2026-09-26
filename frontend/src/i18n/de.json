@@ -225,5 +225,7 @@
   "confirm.disableCourt": "Diesen Platz deaktivieren? Er wird für Buchungen ausgeblendet, behält aber den Verlauf.",
   "confirm.deleteBlock": "Diesen Einzelblock löschen?",
   "confirm.deleteRecurring": "Diesen wiederkehrenden Block löschen?",
-  "confirm.deleteUser": "Diesen Benutzer löschen? Dies kann nicht rückgängig gemacht werden."
+  "confirm.deleteUser": "Diesen Benutzer löschen? Dies kann nicht rückgängig gemacht werden.",
+  "admin.notifications.telegram.subscribeTitle": "Mit Telegram abonnieren",
+  "admin.notifications.telegram.subscribeDesc": "Verknuepfe dein Telegram-Konto wie im Profil - du erhaeltst hier ausstehende Anfragen, ohne Chat-ID kopieren zu muessen."
 }

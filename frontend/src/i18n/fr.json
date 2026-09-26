@@ -225,5 +225,7 @@
   "confirm.disableCourt": "Désactiver ce terrain ? Il sera masqué des réservations mais conservera l historique.",
   "confirm.deleteBlock": "Supprimer ce bloc ponctuel ?",
   "confirm.deleteRecurring": "Supprimer ce bloc récurrent ?",
-  "confirm.deleteUser": "Supprimer cet utilisateur ? Action irréversible."
+  "confirm.deleteUser": "Supprimer cet utilisateur ? Action irréversible.",
+  "admin.notifications.telegram.subscribeTitle": "S'abonner avec Telegram",
+  "admin.notifications.telegram.subscribeDesc": "Liez votre compte Telegram comme dans le Profil - vous recevrez ici les demandes en attente, sans copier de chat ID."
 }

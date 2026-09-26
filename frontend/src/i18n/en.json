@@ -225,5 +225,7 @@
   "confirm.disableCourt": "Disable this court? It will be hidden from booking but keep history.",
   "confirm.deleteBlock": "Delete this spot block?",
   "confirm.deleteRecurring": "Delete this recurring block?",
-  "confirm.deleteUser": "Delete this user? This cannot be undone."
+  "confirm.deleteUser": "Delete this user? This cannot be undone.",
+  "admin.notifications.telegram.subscribeTitle": "Subscribe with Telegram",
+  "admin.notifications.telegram.subscribeDesc": "Link your Telegram account just like in Profile - you will receive pending requests here, no chat ID copy needed."
 }

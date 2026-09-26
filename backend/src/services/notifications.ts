@@ -211,8 +211,20 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
     const whatsappAdminPhone = settings.whatsappAdminPhone || process.env.WHATSAPP_ADMIN_PHONE || "";
 
     // Telegram to admin(s) — per-recipient language
-    if (viaTelegram && telegramBotToken && telegramAdminChatId) {
-      const chatIds = String(telegramAdminChatId).split(",").map((s: string) => s.trim()).filter(Boolean);
+    // Union: manual telegramAdminChatId list + all linked admin users (users.role=admin AND telegramChatId set)
+    // so admin can subscribe via Admin → Notifications → Connect Telegram just like regular users in Profile.
+    if (viaTelegram && telegramBotToken && (telegramAdminChatId || true)) {
+      const manualIds = telegramAdminChatId ? String(telegramAdminChatId).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+      let linkedAdminIds: string[] = [];
+      try {
+        const adminRows = await db.select().from(users);
+        linkedAdminIds = (adminRows as any[])
+          .filter((u: any) => u.role === "admin" && u.telegramChatId)
+          .map((u: any) => String(u.telegramChatId).trim())
+          .filter(Boolean);
+      } catch {}
+      const chatIds = [...new Set([...manualIds, ...linkedAdminIds])];
+      if (chatIds.length === 0) console.warn("[notify] no telegram admin recipients (manual list empty + no linked admins)");
       for (const chatId of chatIds) {
         let lang: Lang = "it";
         try {

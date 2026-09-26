@@ -155,7 +155,7 @@ function app() {
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
         if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
-        if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
+        if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
         if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
@@ -168,7 +168,7 @@ function app() {
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
       if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
-      if (this.view === "admin-notifications" && this.user?.role === "admin") this.loadAdminSettings();
+      if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
       if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
     },
 
@@ -536,6 +536,7 @@ function app() {
 
     async loadAdminSettings() {
       if (!this.user || this.user.role !== "admin") return;
+      this.checkTelegramStatus();
       try {
         const token = localStorage.getItem("token");
         const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
@@ -1121,7 +1122,7 @@ function app() {
             if (this.telegramLinked) this.telegramLinkUrl = "";
           }
         }, 3000);
-      } catch (e: any) { this.profileError = e.message || String(e); }
+      } catch (e: any) { this.profileError = e.message || String(e); this.notificationTestResult = e.message || String(e); }
       finally { this.telegramLinkLoading = false; }
     },
     async unlinkTelegram() {

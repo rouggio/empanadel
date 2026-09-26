@@ -225,5 +225,7 @@
   "confirm.disableCourt": "Disabilitare questo campo? Sarà nascosto dalle prenotazioni ma manterrà lo storico.",
   "confirm.deleteBlock": "Eliminare questo blocco singolo?",
   "confirm.deleteRecurring": "Eliminare questo blocco ricorrente?",
-  "confirm.deleteUser": "Eliminare questo utente? Azione irreversibile."
+  "confirm.deleteUser": "Eliminare questo utente? Azione irreversibile.",
+  "admin.notifications.telegram.subscribeTitle": "Iscriviti con Telegram",
+  "admin.notifications.telegram.subscribeDesc": "Collega il tuo account Telegram come fai nel Profilo - riceverai qui le richieste in attesa, senza copiare alcun chat ID."
 }

@@ -183,12 +183,12 @@
  <div class="text-zinc-500" x-text="t('hold.confirm')"></div>
  </div>
  <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
-  <input x-model="regForm.email" :placeholder="t('auth.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2" />
+   <input x-model="regForm.email" type="email" :placeholder="t('auth.email')" class="w-full rounded-lg border px-3 py-2" />
   <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
   <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
   <div class="flex gap-2">
   <select x-model="regForm.mobile_code" class="w-32 shrink-0 rounded-lg border px-2 py-2 text-sm">
-  <template x-for="c in countryCodes" :key="c.code"><option :value="c.code" x-text="c.label"></option></template>
+  <template x-for="c in countryCodes" :key="c.cca2"><option :value="c.code" x-text="c.label"></option></template>
   </select>
   <input x-model="regForm.mobile_number" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="flex-1 rounded-lg border px-3 py-2" />
   </div>
@@ -278,7 +278,7 @@
  </div>
    <div class="flex gap-2">
    <select x-model="profileForm.mobile_code" class="w-32 shrink-0 rounded-lg border px-2 py-2 text-sm">
-   <template x-for="c in countryCodes" :key="c.code"><option :value="c.code" x-text="c.label"></option></template>
+   <template x-for="c in countryCodes" :key="c.cca2"><option :value="c.code" x-text="c.label"></option></template>
    </select>
    <input x-model="profileForm.mobile_number" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="flex-1 rounded-lg border px-3 py-2 text-sm" />
    </div>
@@ -289,15 +289,7 @@
   <p x-show="telegramLinkUrl" class="text-xs break-all"><a :href="telegramLinkUrl" target="_blank" class="underline text-emerald-700" x-text="telegramLinkUrl"></a></p>
   <p class="text-[11px] text-zinc-500" x-text="t('telegram.hint')"></p>
   </div>
-  <select x-model="profileForm.gender" class="w-full rounded-lg border px-3 py-2 text-sm">
- <option value="" x-text="'— ' + t('profile.gender') + ' —'"></option>
- <option value="male" x-text="t('profile.gender.male')"></option>
- <option value="female" x-text="t('profile.gender.female')"></option>
- <option value="other" x-text="t('profile.gender.other')"></option>
- <option value="prefer_not_to_say" x-text="t('profile.gender.prefer_not_to_say')"></option>
- </select>
- <input x-model="profileForm.birthdate" type="date" class="w-full rounded-lg border px-3 py-2 text-sm" />
- <select x-model="profileForm.preferred_sport" class="w-full rounded-lg border px-3 py-2 text-sm">
+  <select x-model="profileForm.preferred_sport" class="w-full rounded-lg border px-3 py-2 text-sm">
  <option value="" x-text="t('profile.preferredSport.none')"></option>
  <option value="tennis">Tennis</option>
  <option value="padel">Padel</option>
@@ -490,45 +482,58 @@
   <div class="flex items-center gap-2">
   <h2 class="text-xl font-bold" x-text="t('admin.bookings')"></h2>
   </div>
- <div class="flex items-center justify-between rounded-xl border bg-white p-4" x-show="adminSettings">
- <div>
- <div class="font-medium text-sm" x-text="t('admin.autoApprove')"></div>
-  <div class="text-xs text-zinc-500" x-text="adminSettings ? (adminSettings.auto_approve_bookings ? t('admin.autoApprove.enabled') : t('admin.autoApprove.disabled')) : ''"></div>
- </div>
- <button @click="toggleAutoApprove()" class="rounded-lg px-4 py-2 text-xs font-medium" :class="adminSettings?.auto_approve_bookings ? 'bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300' : 'bg-zinc-200'" x-text="adminSettings?.auto_approve_bookings ? 'ON' : 'OFF'"></button>
- </div>
- <div class="flex gap-2">
-  <select x-model="adminFilter" @change="loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
-  <option value="pending_approval" x-text="t('status.pending_approval')"></option>
-  <option value="approved" x-text="t('status.approved')"></option>
-  <option value="" x-text="t('filter.all')"></option>
-  </select>
- <span x-show="adminLoading" class="text-xs text-zinc-500 py-2" x-text="t('myBookings.loading')"></span>
- </div>
+   <div class="flex flex-wrap items-center gap-2">
+   <select x-model="adminFilter" @change="adminPage=1; loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
+   <option value="pending_approval" x-text="t('status.pending_approval')"></option>
+   <option value="approved" x-text="t('status.approved')"></option>
+   <option value="" x-text="t('filter.all')"></option>
+   </select>
+   <select x-model="adminDateFilter" @change="adminPage=1; loadAdminBookings()" class="rounded-lg border px-3 py-2 text-sm">
+   <option value="all" x-text="t('admin.bookings.dateAll')"></option>
+   <option value="today" x-text="t('admin.bookings.dateToday')"></option>
+   <option value="week" x-text="t('admin.bookings.dateWeek')"></option>
+   <option value="month" x-text="t('admin.bookings.dateMonth')"></option>
+   <option value="custom" x-text="t('admin.bookings.dateCustom')"></option>
+   </select>
+   <template x-if="adminDateFilter==='custom'">
+   <div class="flex items-center gap-2 text-sm">
+   <label class="text-xs text-zinc-500" x-text="t('admin.bookings.dateFrom')"></label>
+   <input type="date" x-model="adminDateFrom" @change="adminPage=1; loadAdminBookings()" class="rounded-lg border px-2 py-2 text-sm" />
+   <label class="text-xs text-zinc-500" x-text="t('admin.bookings.dateTo')"></label>
+   <input type="date" x-model="adminDateTo" @change="adminPage=1; loadAdminBookings()" class="rounded-lg border px-2 py-2 text-sm" />
+   </div>
+   </template>
+  <span x-show="adminLoading" class="text-xs text-zinc-500 py-2" x-text="t('myBookings.loading')"></span>
+  </div>
  <p x-show="adminError" class="text-sm text-red-600" x-text="adminError"></p>
  <p x-show="!adminLoading && adminBookings.length===0" class="rounded-xl border bg-white p-6 text-center text-sm text-zinc-500" x-text="t('admin.noBookings')"></p>
- <div class="space-y-3">
-  <template x-for="b in adminBookings" :key="b.id">
-  <div class="rounded-xl border bg-white p-4" :class="adminHighlightId===b.id ? 'ring-2 ring-emerald-400 border-emerald-400' : ''" x-init="if(adminHighlightId===b.id) $nextTick(()=> $el.scrollIntoView({behavior:'smooth', block:'center'}))">
- <div class="flex items-start justify-between gap-2">
- <div>
- <div class="font-semibold" x-text="courtLabel(b)"></div>
- <div class="text-sm text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
+  <div class="space-y-2">
+   <template x-for="b in pagedAdminBookings()" :key="b.id">
+  <div class="rounded-xl border bg-white px-3 py-2" :class="adminHighlightId===b.id ? 'ring-2 ring-emerald-400 border-emerald-400' : ''" x-init="if(adminHighlightId===b.id) $nextTick(()=> $el.scrollIntoView({behavior:'smooth', block:'center'}))">
+  <div class="grid grid-cols-[1fr_auto] items-start gap-2">
+  <div class="grid gap-0.5 text-sm">
+  <div class="font-semibold leading-tight" x-text="courtLabel(b)"></div>
+  <div class="text-zinc-600" x-text="`${b.date} · ${b.startTime}–${b.endTime}`"></div>
    <div class="text-xs text-zinc-500"><span x-text="`${b.players===4 ? t('confirm.double') : t('confirm.single')} · ${b.rentRacquets ? b.rentRacquets + ' ' + t('confirm.rent').toLowerCase() : '0 ' + t('confirm.rent').toLowerCase()} · `"></span><button @click="viewUserById(b.userId)" class="underline hover:text-black hover:decoration-zinc-400" x-text="b.username || String(b.userId||'').slice(0,8)"></button></div>
-  <div x-show="b.notes" class="mt-1 text-xs italic text-zinc-600 bg-amber-50 p-2 rounded" x-text="b.notes"></div>
+  <div x-show="b.notes" class="text-xs italic text-zinc-600 bg-amber-50 px-2 py-1 rounded" x-text="b.notes"></div>
   </div>
+  <div class="flex flex-col items-end gap-1.5">
   <span class="rounded-lg px-2 py-1 text-xs font-medium" :class="statusClass(b.status)" x-text="t('status.'+b.status)"></span>
- </div>
- <div class="mt-3 flex gap-2" x-show="b.status==='pending_approval'">
- <button @click="approveBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.approve')"></button>
- <button @click="rejectBooking(b.id)" class="rounded-lg border px-4 py-2 text-xs hover:bg-zinc-50" x-text="t('btn.reject')"></button>
- </div>
- </div>
- </template>
- </div>
- </section>
+  <button x-show="b.status==='pending_approval'" @click="approveBooking(b.id)" class="rounded-lg bg-emerald-200 border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-900 hover:bg-emerald-300" x-text="t('btn.approve')"></button>
+  <button x-show="b.status==='pending_approval' || b.status==='approved'" @click="rejectBooking(b.id)" class="rounded-lg border bg-white px-3 py-1 text-xs hover:bg-zinc-50" x-text="t('btn.reject')"></button>
+  </div>
+  </div>
+  </div>
+  </template>
+  </div>
+  <div x-show="adminTotalPages() > 1" class="flex items-center justify-center gap-3 pt-1">
+  <button @click="adminPage--" :disabled="adminPage <= 1" class="rounded-lg border bg-white px-3 py-1 text-xs disabled:opacity-40" x-text="t('paging.prev')"></button>
+  <span class="text-xs text-zinc-500" x-text="`${t('paging.page')} ${adminPage} / ${adminTotalPages()}`"></span>
+  <button @click="adminPage++" :disabled="adminPage >= adminTotalPages()" class="rounded-lg border bg-white px-3 py-1 text-xs disabled:opacity-40" x-text="t('paging.next')"></button>
+  </div>
+  </section>
 
- <section x-show="view==='admin-blocks'" class="space-y-4">
+  <section x-show="view==='admin-blocks'" class="space-y-4">
  <div class="flex items-center gap-2">
  
  <h2 class="text-xl font-bold" x-text="t('admin.blocks')"></h2>
@@ -634,11 +639,18 @@
   <input x-model="clubForm.club_name" :placeholder="t('admin.club.name')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <input x-model="clubForm.club_phone" :placeholder="t('admin.club.phone')" class="w-full rounded-lg border px-3 py-2 text-sm" />
   <input x-model="clubForm.club_address" :placeholder="t('admin.club.address')" class="w-full rounded-lg border px-3 py-2 text-sm" />
-  <input x-model="clubForm.public_url" :placeholder="t('admin.club.publicUrlPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
-  <p class="text-xs text-zinc-500" x-text="t('admin.club.publicUrlHint')"></p>
-  <button @click="saveClubInfo()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.club.save')"></button>
+   <input x-model="clubForm.public_url" :placeholder="t('admin.club.publicUrlPlaceholder')" class="w-full rounded-lg border px-3 py-2 text-sm font-mono" />
+   <p class="text-xs text-zinc-500" x-text="t('admin.club.publicUrlHint')"></p>
+   <button @click="saveClubInfo()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.club.save')"></button>
+    </div>
+   <div class="flex items-center justify-between rounded-xl border bg-zinc-50 p-4" x-show="adminSettings">
+   <div>
+   <div class="font-medium text-sm" x-text="t('admin.autoApprove')"></div>
+    <div class="text-xs text-zinc-500" x-text="adminSettings ? (adminSettings.auto_approve_bookings ? t('admin.autoApprove.enabled') : t('admin.autoApprove.disabled')) : ''"></div>
    </div>
-   </section>
+   <button @click="toggleAutoApprove()" class="rounded-lg px-4 py-2 text-xs font-medium" :class="adminSettings?.auto_approve_bookings ? 'bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300' : 'bg-zinc-200'" x-text="adminSettings?.auto_approve_bookings ? 'ON' : 'OFF'"></button>
+   </div>
+    </section>
 
    <section x-show="view==='admin-reports'" class="space-y-4">
    <h2 class="text-xl font-bold" x-text="t('admin.reports.title')"></h2>

@@ -1,5 +1,20 @@
 import Alpine from "alpinejs";
 import { detectLang, setLang, t as translate, type Lang } from "./i18n/index.js";
+import { DIAL_CODES, DIAL_CODE_BY_REGION } from "./dialCodes.js";
+
+// Default country dial code from browser locale (fr-CH → +41), else app
+// language (it → +39 …), else +39 (club is Italian). Full list in dialCodes.ts.
+function defaultDialCode(): string {
+  try {
+    const tag = navigator.language || "";
+    const parts = tag.split("-");
+    const region = (parts[1] || "").toUpperCase()
+      || ({ it: "IT", fr: "FR", de: "DE", es: "ES", en: "GB" } as Record<string, string>)[parts[0].toLowerCase()]
+      || "";
+    if (region && DIAL_CODE_BY_REGION[region]) return DIAL_CODE_BY_REGION[region];
+  } catch {}
+  return "+39";
+}
 
 declare global {
   interface Window {
@@ -28,29 +43,8 @@ function app() {
     _refreshTimer: null as number | null,
     _refreshing: false as boolean,
     authForm: { username: "", password: "" },
-    regForm: { username: "", email: "", mobile_code: "+39", mobile_number: "", first_name: "", last_name: "", password: "" },
-    countryCodes: [
-      { code: "+39", label: "+39 Italy" },
-      { code: "+33", label: "+33 France" },
-      { code: "+34", label: "+34 Spain" },
-      { code: "+49", label: "+49 Germany" },
-      { code: "+41", label: "+41 Switzerland" },
-      { code: "+43", label: "+43 Austria" },
-      { code: "+32", label: "+32 Belgium" },
-      { code: "+31", label: "+31 Netherlands" },
-      { code: "+351", label: "+351 Portugal" },
-      { code: "+30", label: "+30 Greece" },
-      { code: "+44", label: "+44 UK" },
-      { code: "+353", label: "+353 Ireland" },
-      { code: "+1", label: "+1 USA / Canada" },
-      { code: "+40", label: "+40 Romania" },
-      { code: "+48", label: "+48 Poland" },
-      { code: "+355", label: "+355 Albania" },
-      { code: "+212", label: "+212 Morocco" },
-      { code: "+216", label: "+216 Tunisia" },
-      { code: "+55", label: "+55 Brazil" },
-      { code: "+54", label: "+54 Argentina" },
-    ] as Array<{ code: string; label: string }>,
+    regForm: { username: "", email: "", mobile_code: defaultDialCode(), mobile_number: "", first_name: "", last_name: "", password: "" },
+    countryCodes: DIAL_CODES,
     authError: "" as string,
     bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; notes?: string; rentRacquets?: number; players?: number; courtNumber?: number; courtType?: string; courtName?: string }>,
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
@@ -68,6 +62,11 @@ function app() {
     adminLoading: false as boolean,
     adminError: "" as string,
     adminFilter: "pending_approval" as string,
+    adminDateFilter: "all" as "all" | "today" | "week" | "month" | "custom",
+    adminDateFrom: "" as string,
+    adminDateTo: "" as string,
+    adminPage: 1 as number,
+    adminPageSize: 10 as number,
     adminHighlightId: null as string | null,
     adminSettings: null as null | { auto_approve_bookings: boolean; booking_hold_minutes: number; notifications_enabled?: boolean; notify_on_auto_approved?: boolean; notify_on_approval?: boolean; notify_on_rejection?: boolean; notify_via_telegram?: boolean; notify_via_whatsapp?: boolean; telegram_bot_token?: string | null; telegram_bot_token_present?: boolean; telegram_admin_chat_id?: string | null; whatsapp_token_present?: boolean; whatsapp_phone_number_id?: string | null; whatsapp_admin_phone?: string | null },
     notificationForm: { notifications_enabled: false, notify_on_auto_approved: false, notify_on_approval: true, notify_on_rejection: true, notify_via_telegram: true, notify_via_whatsapp: true, telegram_bot_token: "", telegram_admin_chat_id: "", whatsapp_token: "", whatsapp_phone_number_id: "", whatsapp_admin_phone: "" } as { notifications_enabled: boolean; notify_on_auto_approved: boolean; notify_on_approval: boolean; notify_on_rejection: boolean; notify_via_telegram: boolean; notify_via_whatsapp: boolean; telegram_bot_token: string; telegram_admin_chat_id: string; whatsapp_token: string; whatsapp_phone_number_id: string; whatsapp_admin_phone: string },
@@ -95,7 +94,7 @@ function app() {
     adminTimetableLoading: false as boolean,
     adminTimetableError: "" as string,
     adminTimetableSuccess: "" as string,
-    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile_code: "+39", mobile_number: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile_code: defaultDialCode(), mobile_number: "", telegram_chat_id: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
@@ -207,12 +206,12 @@ function app() {
         if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
         if (this.view === "me" && this.user) this.loadBookings();
         if (this.view === "profile" && this.user) this.loadProfile();
-        if (this.view === "admin-bookings" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+        if (this.view === "admin-bookings" && this.user?.role === "admin") { await this.loadAdminSettings(); this.applyBookingFilterPreset(); this.loadAdminBookings(); }
         if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
         if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
         if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
-        if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
+        if (this.view === "admin-club" && this.user?.role === "admin") { this.loadAdminClubInfo(); this.loadAdminSettings(); }
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
         if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
         if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
@@ -220,12 +219,12 @@ function app() {
       if (this.view === "me" && this.user) this.loadBookings();
       if (this.view === "profile" && this.user) this.loadProfile();
       if (this.view === "admin") { this.view = "admin-bookings"; location.hash = "admin-bookings"; }
-      if (this.view === "admin-bookings" && this.user?.role === "admin") { this.loadAdminBookings(); this.loadAdminSettings(); }
+      if (this.view === "admin-bookings" && this.user?.role === "admin") { await this.loadAdminSettings(); this.applyBookingFilterPreset(); this.loadAdminBookings(); }
       if (this.view === "admin-courts" && this.user?.role === "admin") this.loadAdminCourts();
       if (this.view === "admin-users" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-create-user" && this.user?.role === "admin") this.loadAdminUsers();
       if (this.view === "admin-blocks" && this.user?.role === "admin") { this.loadAdminLessons(); this.loadAdminBlocks(); this.loadAdminCourts(); }
-      if (this.view === "admin-club" && this.user?.role === "admin") this.loadAdminClubInfo();
+      if (this.view === "admin-club" && this.user?.role === "admin") { this.loadAdminClubInfo(); this.loadAdminSettings(); }
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
       if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
       if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
@@ -542,13 +541,44 @@ function app() {
       await this.loadAvailability();
     },
 
+    // Booking-date range for the admin queue (Europe/Rome, Monday-start weeks).
+    adminDateRange(): { from?: string; to?: string } {
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Rome" });
+      if (this.adminDateFilter === "today") return { from: today, to: today };
+      if (this.adminDateFilter === "week") {
+        const d = new Date(today + "T12:00:00Z");
+        const off = (d.getUTCDay() + 6) % 7; // days since Monday
+        const mon = new Date(d.getTime() - off * 86400000).toISOString().slice(0, 10);
+        const sun = new Date(d.getTime() + (6 - off) * 86400000).toISOString().slice(0, 10);
+        return { from: mon, to: sun };
+      }
+      if (this.adminDateFilter === "month") {
+        const [y, m] = today.split("-").map(Number);
+        const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        const mm = String(m).padStart(2, "0");
+        return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${last}` };
+      }
+      if (this.adminDateFilter === "custom") {
+        const r: { from?: string; to?: string } = {};
+        if (this.adminDateFrom) r.from = this.adminDateFrom;
+        if (this.adminDateTo) r.to = this.adminDateTo;
+        return r;
+      }
+      return {};
+    },
+
     async loadAdminBookings() {
       if (!this.user || this.user.role !== "admin") return;
       this.adminLoading = true; this.adminError = "";
       try {
         const token = localStorage.getItem("token");
-        const q = this.adminFilter ? `?status=${this.adminFilter}` : "";
-        const res = await fetch(`/api/bookings${q}`, { headers: { Authorization: `Bearer ${token}` } });
+        const params = new URLSearchParams();
+        if (this.adminFilter) params.set("status", this.adminFilter);
+        const range = this.adminDateRange();
+        if (range.from) params.set("date_from", range.from);
+        if (range.to) params.set("date_to", range.to);
+        const qs = params.toString();
+        const res = await fetch(`/api/bookings${qs ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(await res.text());
         const rows = await res.json();
         this.adminBookings = (rows as any[]).map((r) => ({
@@ -564,6 +594,12 @@ function app() {
           rentRacquets: r.rentRacquets ?? r.rent_racquets ?? 0,
           players: r.players ?? 2,
         }));
+        // Jump to the highlighted booking's page (deep link), else clamp page.
+        if (this.adminHighlightId) {
+          const idx = this.adminBookings.findIndex((b) => b.id === this.adminHighlightId);
+          if (idx >= 0) this.adminPage = Math.floor(idx / this.adminPageSize) + 1;
+        }
+        if (this.adminPage > this.adminTotalPages()) this.adminPage = this.adminTotalPages();
       } catch (e: any) { this.adminError = e.message || String(e); }
       finally { this.adminLoading = false; }
     },
@@ -583,6 +619,21 @@ function app() {
       await this.loadAdminBookings(); await this.loadBookings(); await this.loadAvailability();
     },
 
+    // Preset the bookings queue to what needs attention: with auto-approve on,
+    // new bookings land approved; otherwise they await approval. Manual user
+    // selection is preserved until the next entry to the view.
+    applyBookingFilterPreset() {
+      if (this.adminHighlightId) return; // deep link forces "all" via syncHighlight
+      this.adminFilter = this.adminSettings?.auto_approve_bookings ? "approved" : "pending_approval";
+      this.adminPage = 1;
+    },
+    adminTotalPages(): number {
+      return Math.max(1, Math.ceil(this.adminBookings.length / this.adminPageSize));
+    },
+    pagedAdminBookings(): Array<{ id: string; courtId: string; date: string; startTime: string; endTime: string; status: string; userId?: string; username?: string; notes?: string; rentRacquets?: number; players?: number }> {
+      const start = (this.adminPage - 1) * this.adminPageSize;
+      return this.adminBookings.slice(start, start + this.adminPageSize);
+    },
     async loadAdminSettings() {
       if (!this.user || this.user.role !== "admin") return;
       this.checkTelegramStatus();
@@ -1104,8 +1155,6 @@ function app() {
           mobile_code: this.splitMobile(me.mobile || "").code,
           mobile_number: this.splitMobile(me.mobile || "").number,
           telegram_chat_id: me.telegram_chat_id || me.telegramChatId || "",
-          gender: me.gender || "",
-          birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
           preferred_language: me.preferred_language || me.preferredLanguage || this.lang,
           preferred_sport: me.preferred_sport || me.preferredSport || "",
         };
@@ -1124,8 +1173,6 @@ function app() {
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
       payload.mobile = this.fullMobile(this.profileForm.mobile_code, this.profileForm.mobile_number) || null;
-      if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
-      if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
       if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;
       if (this.profileForm.preferred_sport !== undefined) payload.preferred_sport = this.profileForm.preferred_sport || null;
       const res = await fetch("/api/users/me", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });

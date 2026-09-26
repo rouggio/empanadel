@@ -14,11 +14,11 @@
 ## 2. Git & Deploy — CRITICAL HABIT
 - **Remote**: `origin git@github.com:rouggio/bagelclub.git` (renamed from `rouggio/empanadel` 2026-09-26) `push.autoSetupRemote=true` branch `main`.
 - **Commits**: inspect `git status`, `git diff`, `git log --oneline -10` before committing; stage only intended files; never commit secrets; concise commit message matching repo style.
-- **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, `deploy`, or shorthand `pd` (= push+deploy) you may `git push` + `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`. All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
+- **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, `deploy`, or shorthand `pd` (= push+deploy) you may `git push` + `POST https://api.render.com/deploy/srv-darnrld9fdbs73ac0u3g?key=QXQBgUZ55kQ` (old hook `srv-daqe6t17lnhs73cmjon0` died when Render was reconfigured 2026-09-26). All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
 - **All bugs & actions requested are for LOCAL dev (`docker-compose` postgres:5432, `localhost:3000/5173`) unless user explicitly says `production`/`live`/`Neon`/`Render`** — do not touch production DB or `origin/main` for fixes like `20:00 booking 409` `Centrale` local `diag.mjs` etc.
 - **When deploy IS requested**: Render `autoDeploy` is **OFF**. After `git push` you **MUST** call the deploy hook:
   ```
-  POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0
+  POST https://api.render.com/deploy/srv-darnrld9fdbs73ac0u3g?key=QXQBgUZ55kQ
   ```
   Returns `200`/`202` when triggered. Check `https://dashboard.render.com` → `empanadel-api` → `Deploys` for `live`. `RENDER_API_KEY=rnd_NjNDJCirx2Syaifem7XBALC4LvMJ` is for workspace `IndietroTutta` (`srv-d9cho6uq...`) and **cannot** see Empanadel service — do not use `GET /v1/services` with it for Empanadel.
 - **Render Blueprint**: `render.yaml:1` single `empanadel-api` `buildCommand: NPM_CONFIG_PRODUCTION=false npm ci --prefix backend && npm run build --prefix backend && NPM_CONFIG_PRODUCTION=false npm ci --prefix frontend && npm run build --prefix frontend` `startCommand: npm run migrate && npm start` `health /health` + `empanadel-db` frankfurt. Env `DATABASE_URL` must be Neon `postgres://...`, `JWT_SECRET`, `JWT_EXPIRES_IN=15m`, `CORS_ORIGIN=http://localhost:5173`, `CLUB_TIMEZONE=Europe/Rome`.
@@ -75,7 +75,7 @@
 
 ## 11. Current State (as of 2026-09-25)
 - Branches `main` commits `4c907fe` → `b278baa` (theme/i18n/admin) → `7e54b01` (court name) → `73faec3` (past guard etc.) → `b0701ef` (mobile dropdown etc.) → latest includes past guard, blocked red, spot blocks, weekdays full, court name, etc. Next deploy is `b0701ef`/`73faec3` after manual hook.
-- Dev ports `3000` (Fastify) + `5173` (Vite) via `concurrently`; after push `git push` → manual `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`.
+- Dev ports `3000` (Fastify) + `5173` (Vite) via `concurrently`; after push `git push` → manual `POST https://api.render.com/deploy/srv-darnrld9fdbs73ac0u3g?key=QXQBgUZ55kQ`.
 - No `pending_registration` filter anymore in admin-bookings, no home `pendingIntent` amber block, no `Lingua` label, no hash IDs, no front page 3 cards.
 
 Keep this file in sync — next AI should read it first.

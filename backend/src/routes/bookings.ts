@@ -91,7 +91,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
       if (s?.notifyOnAutoApproved) {
         try {
           const { notifyAdminPendingBooking } = await import("../services/notifications.js");
-          notifyAdminPendingBooking(db, row).catch(() => {});
+          notifyAdminPendingBooking(db, row, { autoApproved: true }).catch(() => {});
         } catch {}
       }
       // User auto-approved — localized to user's language (skip admin self-bookings)
@@ -109,13 +109,16 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
     const db: any = (fastify as any).db;
     const user = (req as any).user;
     if (!db) return reply.send([]);
-    const { mine, status, court_id } = (req.query as any) || {};
+    const { mine, status, court_id, date_from, date_to } = (req.query as any) || {};
     let rows = await db.select().from(bookings).orderBy(desc(bookings.createdAt));
     if (user.role !== "admin" || mine === "true") {
       rows = rows.filter((r: any) => String(r.userId) === String(user.id));
     }
     if (status) rows = rows.filter((r: any) => r.status === status);
     if (court_id) rows = rows.filter((r: any) => String(r.courtId) === String(court_id));
+    // Booking date filter (YYYY-MM-DD, club-local; slice guards datetime serializations)
+    if (date_from) rows = rows.filter((r: any) => String(r.date).slice(0, 10) >= String(date_from).slice(0, 10));
+    if (date_to) rows = rows.filter((r: any) => String(r.date).slice(0, 10) <= String(date_to).slice(0, 10));
     // Enrich with username for admin display (instead of hash)
     try {
       const userRows = await db.select().from(users);

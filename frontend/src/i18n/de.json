@@ -156,7 +156,7 @@
   "status.unavailable": "nicht verfügbar",
   "admin.blocks.spot": "Blocchi puntuali",
   "btn.clone": "Klonen",
-  "admin.club.title": "Club-Infos",
+  "admin.club.title": "Club-Details",
   "admin.club.name": "Clubname",
   "admin.club.phone": "Club-Telefon",
   "admin.club.address": "Adresse",
@@ -230,5 +230,15 @@
   "admin.notifications.telegram.subscribeDesc": "Verknuepfe dein Telegram-Konto wie im Profil - du erhaeltst hier ausstehende Anfragen, ohne Chat-ID kopieren zu muessen.",
   "field.mobile": "Handy",
   "validation.mobile": "nur Ziffern mit Vorwahl, 6-20 Zeichen",
-  "confirm.sending": "Wird gesendet, bitte warten..."
+  "confirm.sending": "Wird gesendet, bitte warten...",
+  "admin.bookings.dateAll": "Alle Termine",
+  "admin.bookings.dateToday": "Heute",
+  "admin.bookings.dateWeek": "Diese Woche",
+  "admin.bookings.dateMonth": "Dieser Monat",
+  "admin.bookings.dateCustom": "Benutzerdefiniert...",
+  "admin.bookings.dateFrom": "Von",
+  "admin.bookings.dateTo": "Bis",
+  "paging.prev": "< Zurück",
+  "paging.next": "Weiter >",
+  "paging.page": "Seite"
 }

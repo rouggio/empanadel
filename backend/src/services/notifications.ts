@@ -86,6 +86,7 @@ function normalizeLang(v: any): Lang {
 const NOTIF = {
   it: {
     adminPendingTitle: "Nuova prenotazione in attesa di approvazione",
+    adminAutoTitle: "Nuova prenotazione",
     court: "Campo",
     when: "Quando",
     user: "Utente",
@@ -100,6 +101,7 @@ const NOTIF = {
   },
   en: {
     adminPendingTitle: "New booking pending approval",
+    adminAutoTitle: "New booking",
     court: "Court",
     when: "When",
     user: "User",
@@ -114,6 +116,7 @@ const NOTIF = {
   },
   fr: {
     adminPendingTitle: "Nouvelle réservation en attente d'approbation",
+    adminAutoTitle: "Nouvelle réservation",
     court: "Terrain",
     when: "Quand",
     user: "Utilisateur",
@@ -128,6 +131,7 @@ const NOTIF = {
   },
   de: {
     adminPendingTitle: "Neue Buchung ausstehend — Genehmigung erforderlich",
+    adminAutoTitle: "Neue Buchung",
     court: "Platz",
     when: "Wann",
     user: "Nutzer",
@@ -142,6 +146,7 @@ const NOTIF = {
   },
   es: {
     adminPendingTitle: "Nueva reserva pendiente de aprobación",
+    adminAutoTitle: "Nueva reserva",
     court: "Pista",
     when: "Cuándo",
     user: "Usuario",
@@ -176,6 +181,25 @@ function buildAdminPendingPlain(b: any, user: any, court: any, clubName: string,
   const url = bookingAdminUrl(b.id, settings);
   return `🔔 ${clubName} ${T.dash} ${T.adminPendingTitle}\n${T.court}: ${courtLabel}\n${T.when}: ${when}${players}${rent}\n${T.user}: ${who}\n${T.notes}: ${b.notes || "-"}\n${T.managePlain(url)}`;
 }
+// Auto-approved bookings: info only — nothing to approve, so no manage CTA.
+export function buildAdminAutoMessage(b: any, user: any, court: any, clubName: string, lang: Lang): string {
+  const T = NOTIF[normalizeLang(lang)];
+  const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
+  const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
+  const who = user ? `${user.username} (${user.firstName ?? ""} ${user.lastName ?? ""})`.trim() : b.userId;
+  const rent = b.rentRacquets ? ` · ${b.rentRacquets} racquets` : "";
+  const players = b.players ? ` · ${b.players} players` : "";
+  return `🔔 <b>${clubName}</b> ${T.dash} ${T.adminAutoTitle}\n${T.court}: ${courtLabel}\n${T.when}: ${when}${players}${rent}\n${T.user}: ${who}\n${T.notes}: ${b.notes || "-"}`;
+}
+export function buildAdminAutoPlain(b: any, user: any, court: any, clubName: string, lang: Lang): string {
+  const T = NOTIF[normalizeLang(lang)];
+  const courtLabel = court?.name ? `${court.name} · ${court.type}` : `Court #${court?.number ?? b.courtId?.slice(0, 6)}`;
+  const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
+  const who = user ? `${user.username} (${user.firstName ?? ""} ${user.lastName ?? ""})`.trim() : b.userId;
+  const rent = b.rentRacquets ? ` · ${b.rentRacquets} racquets` : "";
+  const players = b.players ? ` · ${b.players} players` : "";
+  return `🔔 ${clubName} ${T.dash} ${T.adminAutoTitle}\n${T.court}: ${courtLabel}\n${T.when}: ${when}${players}${rent}\n${T.user}: ${who}\n${T.notes}: ${b.notes || "-"}`;
+}
 
 function buildUserDecisionMessage(b: any, court: any, clubName: string, decision: "approved" | "rejected", lang: Lang): string {
   const T = NOTIF[normalizeLang(lang)];
@@ -186,7 +210,8 @@ function buildUserDecisionMessage(b: any, court: any, clubName: string, decision
   return `${icon} <b>${clubName}</b> ${T.dash} ${T.yourBookingWas} ${verb}\n${T.court}: ${courtLabel}\n${T.when}: ${when}\n${T.status}: ${verb}`;
 }
 
-export async function notifyAdminPendingBooking(db: Db, booking: any) {
+export async function notifyAdminPendingBooking(db: Db, booking: any, opts?: { autoApproved?: boolean }) {
+  const autoApproved = !!opts?.autoApproved;
   try {
     const settings = await getNotificationSettings(db);
     if (!settings || !settings.notificationsEnabled) return;
@@ -233,7 +258,9 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
           const aRows = await db.select().from(users).where(eq(users.telegramChatId, chatId)).limit(1);
           if (aRows[0]?.preferredLanguage) lang = normalizeLang(aRows[0].preferredLanguage);
         } catch {}
-        const text = buildAdminPendingMessage(booking, user, court, clubName, settings, lang);
+        const text = autoApproved
+          ? buildAdminAutoMessage(booking, user, court, clubName, lang)
+          : buildAdminPendingMessage(booking, user, court, clubName, settings, lang);
         sendTelegramMessage(telegramBotToken, chatId, text).catch(() => {});
       }
     }
@@ -254,7 +281,9 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
           if (found?.preferredLanguage) lang = normalizeLang(found.preferredLanguage);
         } else if (aRows[0]?.preferredLanguage) lang = normalizeLang(aRows[0].preferredLanguage);
       } catch {}
-      const waText = buildAdminPendingPlain(booking, user, court, clubName, settings, lang);
+      const waText = autoApproved
+        ? buildAdminAutoPlain(booking, user, court, clubName, lang)
+        : buildAdminPendingPlain(booking, user, court, clubName, settings, lang);
       sendWhatsAppMessage(whatsappPhoneNumberId, whatsappToken, whatsappAdminPhone, waText).catch(() => {});
     }
   } catch (e) {

@@ -4,17 +4,19 @@ export const preferredLanguageSchema = z.enum(["it", "en", "fr", "de", "es"]);
 // Full international number, digits only, no "+" (E.164 without prefix, e.g. 393331234567).
 // Frontend always sends countryCode + national number combined via fullMobile().
 export const mobileSchema = z.string().regex(/^\d{6,20}$/);
+// Email optional variant (admin create has no required email input in the UI).
+export const optionalEmailSchema = z.preprocess((v) => (v === "" || v === undefined ? null : v), z.string().email().toLowerCase().nullable().optional());
 export const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/),
-  email: z.preprocess((v) => (v === "" || v === undefined ? null : v), z.string().email().toLowerCase().nullable().optional()),
+  email: z.string().email().toLowerCase(),
   mobile: mobileSchema,
   password: z.string().min(8).max(128),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
   preferred_language: preferredLanguageSchema.optional().default("it"),
 });
-// Admin create has no phone input in the UI — mobile stays optional there.
-export const adminCreateUserSchema = registerSchema.omit({ mobile: true }).extend({ mobile: mobileSchema.optional() });
+// Admin create has no required email/phone inputs in the UI — both stay optional there.
+export const adminCreateUserSchema = registerSchema.omit({ mobile: true, email: true }).extend({ mobile: mobileSchema.optional(), email: optionalEmailSchema });
 
 export const loginSchema = z.object({
   username: z.string().optional(),

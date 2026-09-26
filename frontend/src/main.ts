@@ -142,6 +142,7 @@ function app() {
       this.lang = lang;
       setLang(lang);
       document.title = `${this.t("app.name")} — Tennis & Padel Booking`;
+      this.loadAnnouncements();
       if (this.user) {
         const token = localStorage.getItem("token");
         try {
@@ -161,6 +162,7 @@ function app() {
       try { this.pendingIntent = JSON.parse(localStorage.getItem("pending_booking_intent") || "null"); } catch { this.pendingIntent = null; }
       await this.loadClubInfo();
       await this.loadCourts();
+      this.loadAnnouncements();
       const token = localStorage.getItem("token");
       if (token) {
         try {
@@ -214,6 +216,8 @@ function app() {
         if (this.view === "admin-club" && this.user?.role === "admin") { this.loadAdminClubInfo(); this.loadAdminSettings(); }
         if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
         if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
+        if (this.view === "admin-announcements" && this.user?.role === "admin") this.loadAdminAnnouncements();
+        if (this.view === "admin-announcement-form" && this.user?.role !== "admin") { this.view = "home"; location.hash = "home"; }
         if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
       });
       if (this.view === "me" && this.user) this.loadBookings();
@@ -227,6 +231,8 @@ function app() {
       if (this.view === "admin-club" && this.user?.role === "admin") { this.loadAdminClubInfo(); this.loadAdminSettings(); }
       if (this.view === "admin-reports" && this.user?.role === "admin") this.loadReports();
       if (this.view === "admin-notifications" && this.user?.role === "admin") { this.loadAdminSettings(); this.checkTelegramStatus(); }
+      if (this.view === "admin-announcements" && this.user?.role === "admin") this.loadAdminAnnouncements();
+      if (this.view === "admin-announcement-form" && this.user?.role !== "admin") { this.view = "home"; location.hash = "home"; }
       if (this.view === "admin-timetable" && this.user?.role === "admin") { await this.loadAdminCourts(); await this.loadAdminTimetable(); }
     },
 
@@ -389,6 +395,7 @@ function app() {
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
       this.startTokenRefresh();
+      this.loadAnnouncements();
       // Registration never books: with a booking in progress, return to the
       // confirm screen (intent kept in memory + localStorage) so the user
       // submits the booking explicitly from there.
@@ -445,6 +452,7 @@ function app() {
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || null;
       this.startTokenRefresh();
+      this.loadAnnouncements();
       if (data.user?.preferred_language) {
         this.lang = data.user.preferred_language;
         setLang(this.lang);
@@ -461,15 +469,9 @@ function app() {
         location.hash = "confirm";
         return;
       }
-      await this.loadBookings();
-      if (this.user?.role === "admin") {
-        await this.loadAdminBookings(); await this.loadAdminSettings();
-        this.view = "admin-bookings";
-        location.hash = "admin-bookings";
-      } else {
-        this.view = "me";
-        location.hash = "me";
-      }
+      // Everyone lands on the homepage after login (announcements first).
+      this.view = "home";
+      location.hash = "home";
     },
 
     filteredBookings() {
@@ -1045,6 +1047,150 @@ function app() {
       await this.loadAdminLessons(); await this.loadAvailability();
     },
 
+    announcements: [] as Array<{ id: string; title: string; body: string; visibility: string; position: number; publish_start: string | null; publish_end: string | null }>,
+    adminAnns: [] as Array<{ id: string; title: string; body: string; visibility: string; position: number; publish_start: string | null; publish_end: string | null; translations: Record<string, { title: string; body: string }> }>,
+    annLoading: false as boolean,
+    annError: "" as string,
+    adminAnnLoading: false as boolean,
+    adminAnnError: "" as string,
+    adminAnnSuccess: "" as string,
+    annForm: { title: "" as string, body: "" as string, visibility: "public" as string, publish_start: "" as string, publish_end: "" as string, tr: { en: { title: "", body: "" }, fr: { title: "", body: "" }, de: { title: "", body: "" }, es: { title: "", body: "" } } as Record<string, { title: string; body: string }> },
+    editingAnnId: null as string | null,
+
+    normAnn(r: any) {
+      return {
+        id: r.id,
+        title: r.title,
+        body: r.body,
+        visibility: r.visibility || "public",
+        position: r.position ?? 0,
+        publish_start: r.publish_start ? String(r.publish_start).slice(0, 10) : (r.publishStart ? String(r.publishStart).slice(0, 10) : null),
+        publish_end: r.publish_end ? String(r.publish_end).slice(0, 10) : (r.publishEnd ? String(r.publishEnd).slice(0, 10) : null),
+        translations: r.translations || {},
+      };
+    },
+    annStatus(a: { publish_start: string | null; publish_end: string | null }): "scheduled" | "active" | "expired" {
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Rome" });
+      if (a.publish_start && today < a.publish_start) return "scheduled";
+      if (a.publish_end && today > a.publish_end) return "expired";
+      return "active";
+    },
+    async loadAnnouncements() {
+      this.annLoading = true; this.annError = "";
+      try {
+        const headers: any = {};
+        const token = localStorage.getItem("token");
+        if (token) headers.Authorization = `Bearer ${token}`;
+        // Logged-in users read articles in their profile language, not the UI language.
+        const lang = this.user?.preferred_language || (this.user as any)?.preferredLanguage || this.lang;
+        const res = await fetch(`/api/announcements?lang=${lang}`, { headers });
+        if (!res.ok) throw new Error(await res.text());
+        this.announcements = (await res.json()).map((r: any) => this.normAnn(r));
+      } catch (e: any) { this.annError = e.message || String(e); }
+      finally { this.annLoading = false; }
+    },
+    async loadAdminAnnouncements() {
+      if (!this.user || this.user.role !== "admin") return;
+      this.adminAnnLoading = true; this.adminAnnError = ""; this.adminAnnSuccess = "";
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/announcements/all", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        this.adminAnns = (await res.json()).map((r: any) => this.normAnn(r));
+      } catch (e: any) { this.adminAnnError = e.message || String(e); }
+      finally { this.adminAnnLoading = false; }
+    },
+    annPayload() {
+      const tr: Record<string, { title: string; body: string }> = {};
+      for (const l of ["en", "fr", "de", "es"]) {
+        const t = this.annForm.tr[l];
+        if (t && (t.title.trim() || t.body.trim())) tr[l] = { title: t.title.trim(), body: t.body };
+      }
+      return {
+        title: this.annForm.title.trim(),
+        body: this.annForm.body,
+        visibility: this.annForm.visibility,
+        publish_start: this.annForm.publish_start || null,
+        publish_end: this.annForm.publish_end || null,
+        translations: tr,
+      };
+    },
+    resetAnnForm() {
+      this.annForm = { title: "", body: "", visibility: "public", publish_start: "", publish_end: "", tr: { en: { title: "", body: "" }, fr: { title: "", body: "" }, de: { title: "", body: "" }, es: { title: "", body: "" } } };
+      this.editingAnnId = null;
+    },
+    newAnnouncement() {
+      this.resetAnnForm();
+      this.adminAnnError = ""; this.adminAnnSuccess = "";
+      this.view = "admin-announcement-form";
+      location.hash = "admin-announcement-form";
+    },
+    async createAnnouncement() {
+      this.adminAnnError = ""; this.adminAnnSuccess = "";
+      if (!this.annForm.title.trim() || !this.annForm.body.trim()) { this.adminAnnError = "Title and text required"; return; }
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/announcements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(this.annPayload()) });
+      if (!res.ok) { this.adminAnnError = (await res.text()).slice(0, 300); return; }
+      this.adminAnnSuccess = this.t("admin.ann.saved");
+      this.resetAnnForm();
+      await this.loadAdminAnnouncements(); await this.loadAnnouncements();
+      this.view = "admin-announcements";
+      location.hash = "admin-announcements";
+    },
+    startEditAnnouncement(a: any) {
+      this.view = "admin-announcement-form";
+      location.hash = "admin-announcement-form";
+      this.editingAnnId = a.id;
+      const tr: Record<string, { title: string; body: string }> = { en: { title: "", body: "" }, fr: { title: "", body: "" }, de: { title: "", body: "" }, es: { title: "", body: "" } };
+      for (const l of ["en", "fr", "de", "es"]) {
+        if (a.translations?.[l]) tr[l] = { title: a.translations[l].title || "", body: a.translations[l].body || "" };
+      }
+      this.annForm = { title: a.title || "", body: a.body || "", visibility: a.visibility || "public", publish_start: a.publish_start || "", publish_end: a.publish_end || "", tr };
+      this.adminAnnError = ""; this.adminAnnSuccess = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    cancelEditAnnouncement() {
+      this.resetAnnForm();
+      this.adminAnnError = ""; this.adminAnnSuccess = "";
+      this.view = "admin-announcements";
+      location.hash = "admin-announcements";
+    },
+    async updateAnnouncement() {
+      if (!this.editingAnnId) return;
+      this.adminAnnError = ""; this.adminAnnSuccess = "";
+      if (!this.annForm.title.trim() || !this.annForm.body.trim()) { this.adminAnnError = "Title and text required"; return; }
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/announcements/${this.editingAnnId}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(this.annPayload()) });
+      if (!res.ok) { this.adminAnnError = (await res.text()).slice(0, 300); return; }
+      this.adminAnnSuccess = this.t("admin.ann.saved");
+      this.resetAnnForm();
+      await this.loadAdminAnnouncements(); await this.loadAnnouncements();
+      this.view = "admin-announcements";
+      location.hash = "admin-announcements";
+    },
+    async deleteAnnouncement(id: string) {
+      if (!confirm(this.t("admin.ann.deleteConfirm"))) return;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/announcements/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { alert("Delete failed: " + await res.text()); return; }
+      if (this.editingAnnId === id) this.resetAnnForm();
+      await this.loadAdminAnnouncements(); await this.loadAnnouncements();
+    },
+    async moveAnnouncement(id: string, dir: -1 | 1) {
+      const ids = this.adminAnns.map((a) => a.id);
+      const i = ids.indexOf(id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= ids.length) return;
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+      // optimistic reorder, confirm from server
+      this.adminAnns.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/announcements/reorder", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ordered_ids: ids }) });
+      if (!res.ok) { this.adminAnnError = (await res.text()).slice(0, 300); await this.loadAdminAnnouncements(); return; }
+      this.adminAnns = (await res.json()).map((r: any) => this.normAnn(r));
+      await this.loadAnnouncements();
+    },
+
     async loadAdminUsers() {
       if (!this.user || this.user.role !== "admin") return;
       this.adminUsersLoading = true; this.adminUsersError = "";
@@ -1180,11 +1326,12 @@ function app() {
       const updated = await res.json();
       this.profileSuccess = this.t("profile.updated");
       if (updated.preferred_language) { this.lang = updated.preferred_language; setLang(this.lang); localStorage.setItem("lang", this.lang); }
+      this.user = { ...this.user, ...updated };
+      this.loadAnnouncements();
       if (updated.preferred_sport !== undefined) {
         this.filterType = updated.preferred_sport || "";
         if (this.view === "courts") this.loadAvailability();
       }
-      this.user = { ...this.user, ...updated };
       await this.checkTelegramStatus();
     },
     // Silent session renewal via the httpOnly refresh cookie (7d sliding).
@@ -1299,6 +1446,7 @@ function app() {
       this.confirmRent = 0;
       this.user = null;
       this.view = "home";
+      this.loadAnnouncements();
     },
   };
 }

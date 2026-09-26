@@ -23,9 +23,10 @@
   <a href="#admin-bookings" class="hover:text-black" x-text="t('admin.bookings')"></a>
   <a href="#admin-blocks" class="hover:text-black" x-text="t('admin.blocks.short')"></a>
   <a href="#admin-club" class="hover:text-black" x-text="t('admin.club.title')"></a>
-  <a href="#admin-reports" class="hover:text-black" x-text="t('admin.reports.title')"></a>
-  <a href="#admin-notifications" class="hover:text-black" x-text="t('admin.notifications.nav')"></a>
-  </div>
+   <a href="#admin-reports" class="hover:text-black" x-text="t('admin.reports.title')"></a>
+   <a href="#admin-notifications" class="hover:text-black" x-text="t('admin.notifications.nav')"></a>
+   <a href="#admin-announcements" class="hover:text-black" x-text="t('admin.ann.title')"></a>
+   </div>
   </template>
    </nav>
    <!-- Mobile admin dropdown (top, mobile only) -->
@@ -38,8 +39,9 @@
     <a href="#admin-bookings" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.bookings')"></a>
     <a href="#admin-blocks" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.blocks.short')"></a>
     <a href="#admin-club" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.club.title')"></a>
-    <a href="#admin-reports" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.reports.title')"></a>
-    <a href="#admin-notifications" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.notifications.nav')"></a>
+     <a href="#admin-reports" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.reports.title')"></a>
+     <a href="#admin-notifications" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.notifications.nav')"></a>
+     <a href="#admin-announcements" @click="adminMobileOpen=false" class="block px-3 py-2 text-sm hover:bg-zinc-50" x-text="t('admin.ann.title')"></a>
    </div>
    </div>
   <div class="flex items-center gap-2">
@@ -73,13 +75,22 @@
   </nav>
 
  <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-20 md:pb-6">
- <section x-show="view==='home'" class="space-y-6">
-  <div class="hero-gradient rounded-2xl p-8">
-  <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
-  <p class="mt-2 max-w-xl/90" x-text="t('hero.subtitle')"></p>
-  <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-lg bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
-  </div>
-   </section>
+  <section x-show="view==='home'" class="space-y-6">
+   <div class="hero-gradient rounded-2xl p-8">
+   <h1 class="text-3xl font-bold md:text-4xl" x-text="t('hero.title')"></h1>
+   <p class="mt-2 max-w-xl/90" x-text="t('hero.subtitle')"></p>
+   <a href="#courts" @click.prevent="view='courts'; loadCourts()" class="mt-4 inline-block rounded-lg bg-white px-6 py-2 text-sm font-semibold text-emerald-700" x-text="t('hero.cta')"></a>
+   </div>
+   <div x-show="annLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></div>
+   <div x-show="!annLoading && announcements.length" class="space-y-3">
+   <template x-for="a in announcements" :key="a.id">
+   <article class="rounded-xl border bg-white p-4">
+   <div class="font-semibold" x-text="a.title"></div>
+   <p class="mt-1 text-sm text-zinc-700 whitespace-pre-line" x-text="a.body"></p>
+   </article>
+   </template>
+   </div>
+    </section>
 
  <section x-show="view==='courts'" class="space-y-4">
  <div class="flex flex-wrap items-center justify-between gap-2">
@@ -742,6 +753,87 @@
   </div>
   <button @click="saveNotificationSettings()" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('admin.notifications.save')"></button>
   <pre x-show="notificationTestResult" class="text-xs bg-zinc-50 border rounded p-2 whitespace-pre-wrap break-all" x-text="notificationTestResult"></pre>
+  </section>
+
+  <section x-show="view==='admin-announcements'" class="mx-auto max-w-2xl space-y-4 rounded-xl border bg-white p-6" x-init="if(user?.role==='admin') loadAdminAnnouncements()">
+  <div class="flex items-center gap-2">
+  <h2 class="text-xl font-bold" x-text="t('admin.ann.title')"></h2>
+  <button @click="newAnnouncement()" class="ml-auto rounded bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 px-3 py-1 text-xs" x-text="t('admin.ann.new')"></button>
+  </div>
+  <p class="text-xs text-zinc-500" x-text="t('admin.ann.desc')"></p>
+  <p x-show="adminAnnLoading" class="text-sm text-zinc-500" x-text="t('myBookings.loading')"></p>
+  <p x-show="adminAnnError" class="text-sm text-red-600 whitespace-pre-line" x-text="adminAnnError"></p>
+  <p x-show="adminAnnSuccess" class="text-sm text-emerald-600" x-text="adminAnnSuccess"></p>
+  <p x-show="!adminAnnLoading && adminAnns.length===0" class="text-xs text-zinc-500 text-center" x-text="t('admin.ann.empty')"></p>
+  <div class="space-y-2">
+  <template x-for="(a, i) in adminAnns" :key="a.id">
+  <div class="rounded-xl border bg-white px-3 py-2">
+  <div class="grid grid-cols-[1fr_auto] items-start gap-2">
+  <div class="grid gap-0.5 text-sm">
+  <div class="font-semibold leading-tight" x-text="a.title"></div>
+  <div class="text-xs text-zinc-500" x-text="(a.publish_start || '…') + ' → ' + (a.publish_end || '…')"></div>
+  <div class="flex gap-1">
+  <span class="rounded-lg px-2 py-0.5 text-[11px] font-medium" :class="a.visibility==='members' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'" x-text="a.visibility==='members' ? t('admin.ann.members') : t('admin.ann.public')"></span>
+  <span class="rounded-lg px-2 py-0.5 text-[11px] font-medium" :class="annStatus(a)==='active' ? 'bg-emerald-100 text-emerald-700' : annStatus(a)==='scheduled' ? 'bg-amber-100 text-amber-700' : 'bg-zinc-200 text-zinc-600'" x-text="annStatus(a)==='active' ? t('admin.ann.active') : annStatus(a)==='scheduled' ? t('admin.ann.scheduled') : t('admin.ann.expired')"></span>
+  </div>
+  <p class="text-xs text-zinc-600 whitespace-pre-line" x-text="a.body"></p>
+  </div>
+  <div class="flex flex-col items-end gap-1">
+  <div class="flex gap-1">
+  <button @click="moveAnnouncement(a.id, -1)" :disabled="i===0" :title="t('admin.ann.moveUp')" class="rounded-lg border bg-white px-2 py-1 text-xs disabled:opacity-40">▲</button>
+  <button @click="moveAnnouncement(a.id, 1)" :disabled="i===adminAnns.length-1" :title="t('admin.ann.moveDown')" class="rounded-lg border bg-white px-2 py-1 text-xs disabled:opacity-40">▼</button>
+  </div>
+  <div class="flex gap-1">
+  <button @click="startEditAnnouncement(a)" class="rounded-lg border bg-white px-2 py-1 text-xs" x-text="t('btn.edit')"></button>
+  <button @click="deleteAnnouncement(a.id)" class="rounded-lg border bg-white px-2 py-1 text-xs text-red-600" x-text="t('btn.delete')"></button>
+  </div>
+  </div>
+  </div>
+  </div>
+  </template>
+  </div>
+  </section>
+
+  <section x-show="view==='admin-announcement-form'" class="mx-auto max-w-2xl space-y-4 rounded-xl border bg-white p-6">
+  <div class="flex items-center gap-2">
+  <button @click="view='admin-announcements'; location.hash='admin-announcements'" class="rounded-lg border bg-white px-3 py-1 text-xs" x-text="t('btn.back')"></button>
+  <h2 class="text-xl font-bold" x-text="editingAnnId ? t('admin.ann.edit') : t('admin.ann.new')"></h2>
+  </div>
+  <p x-show="adminAnnError" class="text-sm text-red-600 whitespace-pre-line" x-text="adminAnnError"></p>
+  <p x-show="adminAnnSuccess" class="text-sm text-emerald-600" x-text="adminAnnSuccess"></p>
+  <div class="space-y-3">
+  <input x-model="annForm.title" :placeholder="t('admin.ann.titlePh')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <textarea x-model="annForm.body" rows="3" :placeholder="t('admin.ann.bodyPh')" class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+  <template x-for="l in ['en','fr','de','es']" :key="l">
+  <div class="space-y-2 border-t pt-2">
+  <div class="flex items-center gap-2 text-xs font-medium"><img :src="flagUrl(l)" class="h-3 w-4 object-cover rounded-sm" :alt="l" /><span x-text="t('lang.'+l)"></span><span class="text-zinc-400 font-normal" x-text="'(' + t('common.optional') + ')'"></span></div>
+  <input x-model="annForm.tr[l].title" :placeholder="t('admin.ann.titlePh')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  <textarea x-model="annForm.tr[l].body" rows="2" :placeholder="t('admin.ann.bodyPh')" class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+  </div>
+  </template>
+  <div>
+  <label class="text-xs text-zinc-500" x-text="t('admin.ann.visibility')"></label>
+  <select x-model="annForm.visibility" class="w-full rounded-lg border px-3 py-2 text-sm">
+  <option value="public" x-text="t('admin.ann.public')"></option>
+  <option value="members" x-text="t('admin.ann.members')"></option>
+  </select>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+  <div>
+  <label class="text-xs text-zinc-500" x-text="t('admin.ann.start')"></label>
+  <input type="date" x-model="annForm.publish_start" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  </div>
+  <div>
+  <label class="text-xs text-zinc-500" x-text="t('admin.ann.end')"></label>
+  <input type="date" x-model="annForm.publish_end" class="w-full rounded-lg border px-3 py-2 text-sm" />
+  </div>
+  </div>
+  <div class="flex gap-2">
+  <button x-show="!editingAnnId" @click="createAnnouncement()" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('btn.create')"></button>
+  <button x-show="editingAnnId" @click="updateAnnouncement()" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="t('btn.update')"></button>
+  <button @click="cancelEditAnnouncement()" class="rounded-lg border bg-white px-4 py-2 text-sm" x-text="t('btn.cancel')"></button>
+  </div>
+  </div>
   </section>
    </main>
 

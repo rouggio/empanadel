@@ -106,5 +106,22 @@ export const settingsSchema = z.object({
   whatsapp_admin_phone: z.string().max(30).optional().nullable(),
 });
 
+const announcementTranslationEntry = z.object({
+  title: z.string().max(200),
+  body: z.string().max(5000),
+});
+const announcementBase = z.object({
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(5000),
+  visibility: z.enum(["public", "members"]).optional().default("public"),
+  publish_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  publish_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  translations: z.record(preferredLanguageSchema, announcementTranslationEntry).optional(),
+});
+export const announcementSchema = announcementBase.refine((d) => !d.publish_start || !d.publish_end || d.publish_end >= d.publish_start, {
+  message: "publish_end before publish_start",
+});
+export const announcementPatchSchema = announcementBase.partial();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

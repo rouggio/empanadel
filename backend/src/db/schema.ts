@@ -12,6 +12,7 @@ export const bookingStatusEnum = pgEnum("booking_status", [
 ]);
 export const preferredLanguageEnum = pgEnum("preferred_language", ["it", "en", "fr", "de", "es"]);
 export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
+export const announcementVisibilityEnum = pgEnum("announcement_visibility", ["public", "members"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -143,6 +144,26 @@ export const auditLog = pgTable("audit_log", {
   target: varchar("target", { length: 100 }).notNull(),
   meta: text("meta"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const announcements = pgTable("announcements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: varchar("title", { length: 200 }).notNull(),
+  body: text("body").notNull(),
+  visibility: announcementVisibilityEnum("visibility").notNull().default("public"),
+  position: integer("position").notNull().default(0),
+  publishStart: date("publish_start"),
+  publishEnd: date("publish_end"),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const announcementTranslations = pgTable("announcement_translations", {
+  announcementId: uuid("announcement_id").notNull().references(() => announcements.id, { onDelete: "cascade" }),
+  lang: varchar("lang", { length: 5 }).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  body: text("body").notNull(),
 });
 
 export const telegramLinkTokens = pgTable("telegram_link_tokens", {

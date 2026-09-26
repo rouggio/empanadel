@@ -92,6 +92,13 @@
       "when": 1790400005000,
       "tag": "0012_user_approval_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790400006000,
+      "tag": "0013_announcements",
+      "breakpoints": true
     }
   ]
 }

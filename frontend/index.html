@@ -178,9 +178,10 @@
  </div>
  <input x-model="regForm.username" :placeholder="t('auth.username')" class="w-full rounded-lg border px-3 py-2" />
   <input x-model="regForm.email" :placeholder="t('auth.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2" />
- <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
- <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
- <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.mobile" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2" />
+  <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
  <div class="flex items-center gap-2 relative">
  <button @click="registerLangOpen=!registerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs">
  <img :src="flagUrl(lang)" class="h-3 w-4 object-cover rounded-sm" :alt="lang" />

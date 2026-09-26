@@ -12,7 +12,7 @@
 - **Spec**: `SPEC.md:3` v0.1.0→v0.1.7+ (add via `neon.ts` etc.).
 
 ## 2. Git & Deploy — CRITICAL HABIT
-- **Remote**: `origin git@github.com:rouggio/empanadel.git` `push.autoSetupRemote=true` branch `main`.
+- **Remote**: `origin git@github.com:rouggio/bagelclub.git` (renamed from `rouggio/empanadel` 2026-09-26) `push.autoSetupRemote=true` branch `main`.
 - **Commits**: inspect `git status`, `git diff`, `git log --oneline -10` before committing; stage only intended files; never commit secrets; concise commit message matching repo style.
 - **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, `deploy`, or shorthand `pd` (= push+deploy) you may `git push` + `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`. All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
 - **All bugs & actions requested are for LOCAL dev (`docker-compose` postgres:5432, `localhost:3000/5173`) unless user explicitly says `production`/`live`/`Neon`/`Render`** — do not touch production DB or `origin/main` for fixes like `20:00 booking 409` `Centrale` local `diag.mjs` etc.

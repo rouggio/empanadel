@@ -25,7 +25,7 @@ function app() {
     holdCountdown: null as string | null,
     _holdTimer: null as number | null,
     authForm: { username: "", password: "" },
-    regForm: { username: "", email: "", first_name: "", last_name: "", password: "" },
+    regForm: { username: "", email: "", mobile: "", first_name: "", last_name: "", password: "" },
     authError: "" as string,
     bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; notes?: string; rentRacquets?: number; players?: number; courtNumber?: number; courtType?: string; courtName?: string }>,
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
@@ -323,29 +323,16 @@ function app() {
       }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
-      // After registration, create the deferred booking if intent exists (with notes/rent/players from confirm)
+      // Registration never books: with a booking in progress, return to the
+      // confirm screen (intent kept in memory + localStorage) so the user
+      // submits the booking explicitly from there.
       if (this.pendingIntent) {
-        const token = data.token;
-        const payload: any = { court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime };
-        if (this.pendingIntent.notes) payload.notes = this.pendingIntent.notes;
-        if (this.pendingIntent.rentRacquets !== undefined) payload.rent_racquets = this.pendingIntent.rentRacquets;
-        if (this.pendingIntent.players) payload.players = this.pendingIntent.players;
-        else {
-          // fallback defaults per court type
-          const c = this.courts.find((x) => x.id === this.pendingIntent!.courtId);
-          payload.players = c?.type === "padel" ? 4 : 2;
-        }
-        const bookingRes = await fetch("/api/bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        });
-        if (!bookingRes.ok) {
-          const err = await bookingRes.text();
-          this.authError = `Registered but booking failed: ${err} — you can retry from Courts`;
-        }
-        localStorage.removeItem("pending_booking_intent");
-        this.pendingIntent = null;
+        this.confirmNotes = this.pendingIntent.notes || "";
+        this.confirmRent = this.pendingIntent.rentRacquets ?? 0;
+        this.confirmPlayers = this.pendingIntent.players === 4 ? "double" : "single";
+        this.view = "confirm";
+        location.hash = "confirm";
+        return;
       }
       await this.loadBookings();
       // Admin lands on bookings, visitor on my bookings

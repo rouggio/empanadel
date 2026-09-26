@@ -4,6 +4,7 @@ export const preferredLanguageSchema = z.enum(["it", "en", "fr", "de", "es"]);
 export const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/),
   email: z.preprocess((v) => (v === "" || v === undefined ? null : v), z.string().email().toLowerCase().nullable().optional()),
+  mobile: z.string().min(6).max(20),
   password: z.string().min(8).max(128),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),

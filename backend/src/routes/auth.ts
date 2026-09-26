@@ -30,6 +30,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         .values({
           username: data.username,
           email: emailVal,
+          mobile: data.mobile,
           passwordHash,
           firstName: data.first_name,
           lastName: data.last_name,

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { users, bookings, blocks, auditLog } from "../db/schema.js";
 import { eq } from "drizzle-orm";
-import { profileSchema, registerSchema } from "../types/schemas.js";
+import { profileSchema, adminCreateUserSchema } from "../types/schemas.js";
 import bcrypt from "bcryptjs";
 
 export default async function userRoutes(fastify: FastifyInstance) {
@@ -85,7 +85,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post("/api/users", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
-    const parsed = registerSchema.safeParse((req as any).body);
+    const parsed = adminCreateUserSchema.safeParse((req as any).body);
     if (!parsed.success) return reply.status(400).send(parsed.error.flatten());
     const db: any = (fastify as any).db;
     if (!db) return reply.status(501).send({ error: "DB not configured" });
@@ -98,7 +98,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       if (dup[0]) return reply.status(409).send({ error: "username or email already taken" });
     }
     try {
-      const [user] = await db.insert(users).values({ username: data.username, email: emailVal, passwordHash, firstName: data.first_name, lastName: data.last_name, role, preferredLanguage: data.preferred_language ?? "it" }).returning();
+      const [user] = await db.insert(users).values({ username: data.username, email: emailVal, mobile: (data as any).mobile ?? null, passwordHash, firstName: data.first_name, lastName: data.last_name, role, preferredLanguage: data.preferred_language ?? "it" }).returning();
       return reply.status(201).send({ id: user.id, username: user.username, email: user.email, role: user.role });
     } catch (e: any) {
       if (String(e.code) === "23505") return reply.status(409).send({ error: "username or email already taken" });

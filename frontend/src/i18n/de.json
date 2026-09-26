@@ -229,5 +229,6 @@
   "admin.notifications.telegram.subscribeTitle": "Mit Telegram abonnieren",
   "admin.notifications.telegram.subscribeDesc": "Verknuepfe dein Telegram-Konto wie im Profil - du erhaeltst hier ausstehende Anfragen, ohne Chat-ID kopieren zu muessen.",
   "field.mobile": "Handy",
-  "validation.mobile": "gültige Nummer: min 6, max 20 Zeichen"
+  "validation.mobile": "nur Ziffern mit Vorwahl, 6-20 Zeichen",
+  "confirm.sending": "Wird gesendet, bitte warten..."
 }

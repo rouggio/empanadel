@@ -4,6 +4,17 @@ import bcrypt from "bcryptjs";
 import { users } from "../db/schema.js";
 import { eq, or } from "drizzle-orm";
 
+const REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+
+function refreshCookieOpts() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+  };
+}
+
 export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post("/api/auth/register", async (req, reply) => {
     const parsed = registerSchema.safeParse((req as any).body);
@@ -40,13 +51,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
         .returning();
 
       const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
-      // Set refresh as httpOnly cookie (optional)
-      reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      });
+      // Persistent session: httpOnly refresh cookie (7d sliding). SPA renews the
+      // short-lived access token via POST /api/auth/refresh — no login needed.
+      reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: REFRESH_EXPIRES_IN }), refreshCookieOpts());
       return reply.status(201).send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, preferred_language: user.preferredLanguage }, token });
     } catch (e: any) {
       if (String(e.message).includes("unique") || String(e.code) === "23505") {
@@ -81,19 +88,33 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (!ok) return reply.status(401).send({ error: "Invalid credentials" });
 
     const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
-    reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: REFRESH_EXPIRES_IN }), refreshCookieOpts());
     return reply.send({ user: { id: user.id, username: user.username, email: user.email, role: user.role, preferred_language: user.preferredLanguage }, token });
   });
 
-  fastify.post("/api/auth/refresh", { preHandler: [fastify.authenticate] }, async (req, reply) => {
-    const user = (req as any).user;
-    const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role });
-    return reply.send({ token });
+  // Silent session renewal: verifies the httpOnly refresh cookie (NOT the access
+  // token — the old auth-gated version could never renew an expired session),
+  // issues a fresh 15m access token and rotates the cookie (7d sliding window).
+  fastify.post("/api/auth/refresh", async (req, reply) => {
+    const db: any = (fastify as any).db;
+    if (!db) return reply.status(501).send({ error: "DB not configured" });
+    const raw = (req as any).cookies?.refresh_token;
+    if (!raw) return reply.status(401).send({ error: "No refresh session" });
+    let payload: any;
+    try {
+      payload = fastify.jwt.verify(raw);
+    } catch {
+      return reply.status(401).send({ error: "Refresh expired — please login again" });
+    }
+    const rows = await db.select().from(users).where(eq(users.id, payload.id)).limit(1);
+    const user = rows[0];
+    if (!user) return reply.status(401).send({ error: "User not found" });
+    const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role, preferred_language: user.preferredLanguage } as any);
+    reply.setCookie?.("refresh_token", (fastify.jwt.sign as any)({ id: user.id }, { expiresIn: REFRESH_EXPIRES_IN }), refreshCookieOpts());
+    return reply.send({
+      token,
+      user: { id: user.id, username: user.username, email: user.email, role: user.role, preferred_language: user.preferredLanguage },
+    });
   });
 
   fastify.post("/api/auth/logout", async (_req, reply) => {

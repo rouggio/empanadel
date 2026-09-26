@@ -1,15 +1,20 @@
 import { z } from "zod";
 
 export const preferredLanguageSchema = z.enum(["it", "en", "fr", "de", "es"]);
+// Full international number, digits only, no "+" (E.164 without prefix, e.g. 393331234567).
+// Frontend always sends countryCode + national number combined via fullMobile().
+export const mobileSchema = z.string().regex(/^\d{6,20}$/);
 export const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_.-]+$/),
   email: z.preprocess((v) => (v === "" || v === undefined ? null : v), z.string().email().toLowerCase().nullable().optional()),
-  mobile: z.string().min(6).max(20),
+  mobile: mobileSchema,
   password: z.string().min(8).max(128),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
   preferred_language: preferredLanguageSchema.optional().default("it"),
 });
+// Admin create has no phone input in the UI — mobile stays optional there.
+export const adminCreateUserSchema = registerSchema.omit({ mobile: true }).extend({ mobile: mobileSchema.optional() });
 
 export const loginSchema = z.object({
   username: z.string().optional(),

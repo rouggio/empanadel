@@ -183,7 +183,7 @@ function buildUserDecisionMessage(b: any, court: any, clubName: string, decision
   const when = `${b.date} ${String(b.startTime).slice(0, 5)}–${String(b.endTime).slice(0, 5)}`;
   const icon = decision === "approved" ? "✅" : "❌";
   const verb = decision === "approved" ? T.approved : T.rejected;
-  return `${icon} <b>${clubName}</b> ${T.dash} ${T.yourBookingWas} ${verb}\n${T.court}: ${courtLabel}\n${T.when}: ${when}\n${T.status}: ${verb}\nBooking ID: ${b.id}`;
+  return `${icon} <b>${clubName}</b> ${T.dash} ${T.yourBookingWas} ${verb}\n${T.court}: ${courtLabel}\n${T.when}: ${when}\n${T.status}: ${verb}`;
 }
 
 export async function notifyAdminPendingBooking(db: Db, booking: any) {

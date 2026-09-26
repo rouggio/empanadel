@@ -229,5 +229,6 @@
   "admin.notifications.telegram.subscribeTitle": "Suscribirse con Telegram",
   "admin.notifications.telegram.subscribeDesc": "Vincula tu cuenta de Telegram como en el Perfil - recibiras aqui las solicitudes pendientes, sin copiar ningun chat ID.",
   "field.mobile": "Móvil",
-  "validation.mobile": "número válido: mín 6, máx 20 caracteres"
+  "validation.mobile": "solo dígitos con prefijo, 6-20 caracteres",
+  "confirm.sending": "Enviando, espera..."
 }

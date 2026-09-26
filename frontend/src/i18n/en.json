@@ -229,5 +229,6 @@
   "admin.notifications.telegram.subscribeTitle": "Subscribe with Telegram",
   "admin.notifications.telegram.subscribeDesc": "Link your Telegram account just like in Profile - you will receive pending requests here, no chat ID copy needed.",
   "field.mobile": "Mobile",
-  "validation.mobile": "valid number: min 6, max 20 chars"
+  "validation.mobile": "digits only with country code, 6-20 chars",
+  "confirm.sending": "Sending, please wait..."
 }

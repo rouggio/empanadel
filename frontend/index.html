@@ -126,8 +126,14 @@
  </div>
  </section>
 
- <section x-show="view==='confirm'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
- <h2 class="text-lg font-bold" x-text="t('confirm.title')"></h2>
+  <section x-show="view==='confirm'" class="relative mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+  <div x-show="confirmLoading" class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80">
+  <div class="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm shadow">
+  <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></span>
+  <span x-text="t('confirm.sending')"></span>
+  </div>
+  </div>
+  <h2 class="text-lg font-bold" x-text="t('confirm.title')"></h2>
  <div class="rounded-lg bg-zinc-50 p-4 border text-sm">
  <div class="font-semibold" x-text="pendingIntent?.courtLabel"></div>
  <div x-text="`${pendingIntent?.date} · ${pendingIntent?.startTime}`"></div>
@@ -154,13 +160,13 @@
  </div>
  </div>
  </div>
- <div class="flex gap-2">
- <button @click="cancelConfirm()" class="flex-1 rounded-lg border py-2 text-sm" x-text="t('confirm.cancel')"></button>
- <button @click="confirmBooking()" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium" x-text="user ? t('confirm.confirm') : t('confirm.continue')"></button>
- </div>
- </section>
+  <div class="flex gap-2">
+  <button @click="cancelConfirm()" :disabled="confirmLoading" class="flex-1 rounded-lg border py-2 text-sm disabled:opacity-50" x-text="t('confirm.cancel')"></button>
+  <button @click="confirmBooking()" :disabled="confirmLoading" class="flex-1 rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 hover:bg-emerald-300 py-2 text-sm font-medium disabled:opacity-50" x-text="user ? t('confirm.confirm') : t('confirm.continue')"></button>
+  </div>
+  </section>
 
- <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
+  <section x-show="view==='login'" class="mx-auto max-w-md space-y-4 rounded-xl border bg-white p-6">
  <h2 class="text-lg font-bold" x-text="t('auth.login')"></h2>
  <input x-model="authForm.username" :placeholder="t('auth.usernameOrEmail')" class="w-full rounded-lg border px-3 py-2" />
  <input x-model="authForm.password" type="password" :placeholder="t('auth.password')" class="w-full rounded-lg border px-3 py-2" />
@@ -180,7 +186,12 @@
   <input x-model="regForm.email" :placeholder="t('auth.email') + ' (' + t('common.optional') + ')'" class="w-full rounded-lg border px-3 py-2" />
   <input x-model="regForm.first_name" :placeholder="t('auth.firstName')" class="w-full rounded-lg border px-3 py-2" />
   <input x-model="regForm.last_name" :placeholder="t('auth.lastName')" class="w-full rounded-lg border px-3 py-2" />
-  <input x-model="regForm.mobile" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2" />
+  <div class="flex gap-2">
+  <select x-model="regForm.mobile_code" class="w-32 shrink-0 rounded-lg border px-2 py-2 text-sm">
+  <template x-for="c in countryCodes" :key="c.code"><option :value="c.code" x-text="c.label"></option></template>
+  </select>
+  <input x-model="regForm.mobile_number" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="flex-1 rounded-lg border px-3 py-2" />
+  </div>
   <input x-model="regForm.password" type="password" :placeholder="t('auth.passwordHint')" class="w-full rounded-lg border px-3 py-2" />
  <div class="flex items-center gap-2 relative">
  <button @click="registerLangOpen=!registerLangOpen" class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs">
@@ -265,7 +276,12 @@
  <input x-model="profileForm.first_name" :placeholder="t('profile.firstName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  <input x-model="profileForm.last_name" :placeholder="t('profile.lastName')" class="w-full rounded-lg border px-3 py-2 text-sm" />
  </div>
-  <input x-model="profileForm.mobile" :placeholder="t('profile.mobile')" class="w-full rounded-lg border px-3 py-2 text-sm" />
+   <div class="flex gap-2">
+   <select x-model="profileForm.mobile_code" class="w-32 shrink-0 rounded-lg border px-2 py-2 text-sm">
+   <template x-for="c in countryCodes" :key="c.code"><option :value="c.code" x-text="c.label"></option></template>
+   </select>
+   <input x-model="profileForm.mobile_number" type="tel" inputmode="tel" :placeholder="t('profile.mobile')" class="flex-1 rounded-lg border px-3 py-2 text-sm" />
+   </div>
   <div class="rounded-lg border p-3 space-y-2 bg-zinc-50">
   <div class="flex items-center justify-between text-sm"><span class="font-medium" x-text="t('telegram.title')"></span><span class="text-xs" :class="telegramLinked ? 'text-emerald-600' : 'text-zinc-500'" x-text="telegramLinked ? t('telegram.connected') : t('telegram.notConnected')"></span></div>
   <button x-show="!telegramLinked" @click="createTelegramLink()" :disabled="telegramLinkLoading" class="w-full rounded-lg bg-emerald-200 border border-emerald-300 text-emerald-900 py-2 text-xs font-medium" x-text="telegramLinkLoading ? t('telegram.linking') : t('telegram.connect')"></button>

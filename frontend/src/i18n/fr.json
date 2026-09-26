@@ -229,5 +229,6 @@
   "admin.notifications.telegram.subscribeTitle": "S'abonner avec Telegram",
   "admin.notifications.telegram.subscribeDesc": "Liez votre compte Telegram comme dans le Profil - vous recevrez ici les demandes en attente, sans copier de chat ID.",
   "field.mobile": "Mobile",
-  "validation.mobile": "numéro valide : min 6, max 20 caractères"
+  "validation.mobile": "chiffres uniquement avec indicatif, 6-20 caractères",
+  "confirm.sending": "Envoi en cours, patientez..."
 }

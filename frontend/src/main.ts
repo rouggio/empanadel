@@ -19,13 +19,38 @@ function app() {
     courts: [] as Court[],
     availability: {} as Record<string, Array<{ start: string; end: string; status: string }>>,
     pendingIntent: null as null | { courtId: string; date: string; startTime: string; courtLabel?: string; courtType?: string; notes?: string; rentRacquets?: number; players?: number },
+    confirmLoading: false as boolean,
     confirmNotes: "" as string,
     confirmRent: 0 as number,
     confirmPlayers: "single" as "single" | "double",
     holdCountdown: null as string | null,
     _holdTimer: null as number | null,
+    _refreshTimer: null as number | null,
+    _refreshing: false as boolean,
     authForm: { username: "", password: "" },
-    regForm: { username: "", email: "", mobile: "", first_name: "", last_name: "", password: "" },
+    regForm: { username: "", email: "", mobile_code: "+39", mobile_number: "", first_name: "", last_name: "", password: "" },
+    countryCodes: [
+      { code: "+39", label: "+39 Italy" },
+      { code: "+33", label: "+33 France" },
+      { code: "+34", label: "+34 Spain" },
+      { code: "+49", label: "+49 Germany" },
+      { code: "+41", label: "+41 Switzerland" },
+      { code: "+43", label: "+43 Austria" },
+      { code: "+32", label: "+32 Belgium" },
+      { code: "+31", label: "+31 Netherlands" },
+      { code: "+351", label: "+351 Portugal" },
+      { code: "+30", label: "+30 Greece" },
+      { code: "+44", label: "+44 UK" },
+      { code: "+353", label: "+353 Ireland" },
+      { code: "+1", label: "+1 USA / Canada" },
+      { code: "+40", label: "+40 Romania" },
+      { code: "+48", label: "+48 Poland" },
+      { code: "+355", label: "+355 Albania" },
+      { code: "+212", label: "+212 Morocco" },
+      { code: "+216", label: "+216 Tunisia" },
+      { code: "+55", label: "+55 Brazil" },
+      { code: "+54", label: "+54 Argentina" },
+    ] as Array<{ code: string; label: string }>,
     authError: "" as string,
     bookings: [] as Array<{ id: string; courtId: string; court_id?: string; date: string; startTime: string; start_time?: string; endTime: string; end_time?: string; status: string; notes?: string; rentRacquets?: number; players?: number; courtNumber?: number; courtType?: string; courtName?: string }>,
     bookingsTab: "upcoming" as "upcoming" | "past" | "all",
@@ -70,7 +95,7 @@ function app() {
     adminTimetableLoading: false as boolean,
     adminTimetableError: "" as string,
     adminTimetableSuccess: "" as string,
-    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
+    profileForm: { username: "", email: "", first_name: "", last_name: "", mobile_code: "+39", mobile_number: "", telegram_chat_id: "", gender: "", birthdate: "", preferred_language: "it" as Lang, preferred_sport: "" as "" | "tennis" | "padel" },
     profileLoading: false as boolean,
     profileError: "" as string,
     profileSuccess: "" as string,
@@ -90,6 +115,23 @@ function app() {
 
     t(key: string): string {
       return translate(this.lang, key);
+    },
+
+    // Phone: country code selector + national number → full digits-only
+    // E.164 without "+" (e.g. +39 + 3331234567 → 393331234567), as persisted in users.mobile.
+    fullMobile(code: string, number: string): string {
+      const cc = String(code || "").replace(/\D/g, "");
+      const nn = String(number || "").replace(/\D/g, "").replace(/^0+/, "");
+      if (!nn) return "";
+      return cc + nn;
+    },
+    splitMobile(full: string): { code: string; number: string } {
+      const digits = String(full || "").replace(/\D/g, "").replace(/^00/, "");
+      const codes = this.countryCodes.map((c) => c.code.replace(/\D/g, "")).sort((a, b) => b.length - a.length);
+      for (const cc of codes) {
+        if (cc && digits.startsWith(cc) && digits.length > cc.length) return { code: "+" + cc, number: digits.slice(cc.length) };
+      }
+      return { code: "+39", number: digits };
     },
 
     flagUrl(lang: string): string {
@@ -123,8 +165,18 @@ function app() {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
-          if (res.ok) {
+          let res: Response | null = await fetch("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
+          if (res.status === 401) {
+            // Access token expired (15m) — renew silently via the httpOnly
+            // refresh cookie (7d sliding) instead of forcing a re-login.
+            if (await this.refreshToken()) {
+              const t2 = localStorage.getItem("token");
+              res = await fetch("/api/users/me", { headers: { Authorization: `Bearer ${t2}` } });
+            } else {
+              localStorage.removeItem("token");
+            }
+          }
+          if (res?.ok) {
             const me = await res.json();
             this.user = me;
             if (me.preferred_language && ["it","en","fr","de","es"].includes(me.preferred_language)) {
@@ -138,9 +190,14 @@ function app() {
               // reload availability with preset filter
               this.loadAvailability();
             }
+            this.startTokenRefresh();
           }
         } catch {}
       }
+      // Renew the access token when the tab becomes visible again (sleep/wake).
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && this.user) this.refreshToken();
+      });
       const hash = location.hash.replace("#", "").split("?")[0];
       if (hash) this.view = hash;
       this.syncHighlight();
@@ -242,7 +299,7 @@ function app() {
     },
 
     async confirmBooking() {
-      if (!this.pendingIntent) return;
+      if (!this.pendingIntent || this.confirmLoading) return;
       const payload: any = {
         court_id: this.pendingIntent.courtId,
         date: this.pendingIntent.date,
@@ -262,20 +319,28 @@ function app() {
         location.hash = "register";
         return;
       }
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) { alert("Booking failed: " + (await res.text())); return; }
-      localStorage.removeItem("pending_booking_intent");
-      this.pendingIntent = null;
-      await this.loadBookings();
-      if (this.user.role === "admin") await this.loadAdminBookings();
-      await this.loadAvailability();
-      this.view = "me";
-      location.hash = "me";
+      this.confirmLoading = true;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) { alert("Booking failed: " + (await res.text())); return; }
+        // Leave the confirm view BEFORE clearing the intent: the panel renders
+        // `${pendingIntent?.date} · ...` which would flash "undefined" while
+        // the post-booking reloads run with pendingIntent === null.
+        this.view = "me";
+        location.hash = "me";
+        localStorage.removeItem("pending_booking_intent");
+        this.pendingIntent = null;
+        await this.loadBookings();
+        if (this.user?.role === "admin") await this.loadAdminBookings();
+        await this.loadAvailability();
+      } finally {
+        this.confirmLoading = false;
+      }
     },
 
     cancelConfirm() {
@@ -288,7 +353,8 @@ function app() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.regForm, preferred_language: this.lang }),
+        credentials: "include", // store the httpOnly refresh cookie (dev is cross-origin)
+        body: JSON.stringify({ ...this.regForm, mobile: this.fullMobile(this.regForm.mobile_code, this.regForm.mobile_number), preferred_language: this.lang }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -323,6 +389,7 @@ function app() {
       }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || { id: "1", username: this.regForm.username, role: "visitor", preferred_language: this.lang };
+      this.startTokenRefresh();
       // Registration never books: with a booking in progress, return to the
       // confirm screen (intent kept in memory + localStorage) so the user
       // submits the booking explicitly from there.
@@ -350,7 +417,7 @@ function app() {
       this.authError = "";
       const body: any = { password: this.authForm.password };
       if (this.authForm.username.includes("@")) body.email = this.authForm.username; else body.username = this.authForm.username;
-      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (data.fieldErrors || data.formErrors) {
@@ -378,29 +445,22 @@ function app() {
       }
       if (data.token) localStorage.setItem("token", data.token);
       this.user = data.user || null;
+      this.startTokenRefresh();
       if (data.user?.preferred_language) {
         this.lang = data.user.preferred_language;
         setLang(this.lang);
         localStorage.setItem("lang", this.lang);
       }
-      // If guest had a deferred intent, create booking now (also for existing users) with stored notes/rent/players
+      // Login never books: with a booking in progress, return to the confirm
+      // screen (intent kept in memory + localStorage) so the user submits the
+      // booking explicitly from there — same as the register() flow.
       if (this.pendingIntent) {
-        const token = data.token;
-        const payload: any = { court_id: this.pendingIntent.courtId, date: this.pendingIntent.date, start_time: this.pendingIntent.startTime };
-        if (this.pendingIntent.notes) payload.notes = this.pendingIntent.notes;
-        if (this.pendingIntent.rentRacquets !== undefined) payload.rent_racquets = this.pendingIntent.rentRacquets;
-        if (this.pendingIntent.players) payload.players = this.pendingIntent.players;
-        const bookingRes = await fetch("/api/bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        });
-        if (!bookingRes.ok) {
-          const err = await bookingRes.text();
-          this.authError = `Login ok but booking failed: ${err}`;
-        }
-        localStorage.removeItem("pending_booking_intent");
-        this.pendingIntent = null;
+        this.confirmNotes = this.pendingIntent.notes || "";
+        this.confirmRent = this.pendingIntent.rentRacquets ?? 0;
+        this.confirmPlayers = this.pendingIntent.players === 4 ? "double" : "single";
+        this.view = "confirm";
+        location.hash = "confirm";
+        return;
       }
       await this.loadBookings();
       if (this.user?.role === "admin") {
@@ -1041,7 +1101,8 @@ function app() {
           email: me.email || "",
           first_name: me.first_name || me.firstName || "",
           last_name: me.last_name || me.lastName || "",
-          mobile: me.mobile || "",
+          mobile_code: this.splitMobile(me.mobile || "").code,
+          mobile_number: this.splitMobile(me.mobile || "").number,
           telegram_chat_id: me.telegram_chat_id || me.telegramChatId || "",
           gender: me.gender || "",
           birthdate: me.birthdate ? String(me.birthdate).slice(0,10) : "",
@@ -1062,7 +1123,7 @@ function app() {
       payload.email = this.profileForm.email ? this.profileForm.email : null;
       if (this.profileForm.first_name) payload.first_name = this.profileForm.first_name;
       if (this.profileForm.last_name) payload.last_name = this.profileForm.last_name;
-      if (this.profileForm.mobile !== undefined) payload.mobile = this.profileForm.mobile || null;
+      payload.mobile = this.fullMobile(this.profileForm.mobile_code, this.profileForm.mobile_number) || null;
       if (this.profileForm.gender) payload.gender = this.profileForm.gender || null;
       if (this.profileForm.birthdate) payload.birthdate = this.profileForm.birthdate || null;
       if (this.profileForm.preferred_language) payload.preferred_language = this.profileForm.preferred_language;
@@ -1078,6 +1139,44 @@ function app() {
       }
       this.user = { ...this.user, ...updated };
       await this.checkTelegramStatus();
+    },
+    // Silent session renewal via the httpOnly refresh cookie (7d sliding).
+    // Returns true if a fresh access token was stored.
+    async refreshToken(): Promise<boolean> {
+      if (this._refreshing) return !!localStorage.getItem("token");
+      this._refreshing = true;
+      try {
+        const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+        if (!res.ok) {
+          if (res.status === 401) {
+            // Refresh session dead — drop everything, user must login again.
+            this.stopTokenRefresh();
+            localStorage.removeItem("token");
+            this.user = null;
+          }
+          return false;
+        }
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          if (data.user) this.user = { ...this.user, ...data.user };
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        this._refreshing = false;
+      }
+    },
+    // Keep the access token alive while the app is open (15m life → renew every 10m).
+    startTokenRefresh() {
+      this.stopTokenRefresh();
+      this._refreshTimer = window.setInterval(() => { this.refreshToken(); }, 10 * 60 * 1000);
+    },
+    stopTokenRefresh() {
+      if (this._refreshTimer) clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
     },
     async checkTelegramStatus() {
       try {
@@ -1139,8 +1238,18 @@ function app() {
       if (this.user?.role === "admin") await this.loadAdminBookings();
     },
 
-    logout() {
+    async logout() {
+      this.stopTokenRefresh();
+      try {
+        await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      } catch {}
       localStorage.removeItem("token");
+      // Drop any in-progress booking: it must not survive the logout and get
+      // auto-submitted by the next login()'s deferred-intent handler.
+      localStorage.removeItem("pending_booking_intent");
+      this.pendingIntent = null;
+      this.confirmNotes = "";
+      this.confirmRent = 0;
       this.user = null;
       this.view = "home";
     },

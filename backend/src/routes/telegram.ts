@@ -5,9 +5,6 @@ import { randomBytes } from "crypto";
 import { sendTelegramMessage } from "../services/notifications.js";
 import { BRAND_NAME, TELEGRAM_BOT_USERNAME_FALLBACK } from "../config/brand.js";
 
-function getBotTokenFromSettings(s: any): string {
-  return s?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
-}
 async function getBotUsername(botToken: string): Promise<string> {
   if (!botToken) return TELEGRAM_BOT_USERNAME_FALLBACK;
   try {

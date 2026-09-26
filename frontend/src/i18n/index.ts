@@ -5,6 +5,7 @@ import en from "./en.json";
 import fr from "./fr.json";
 import de from "./de.json";
 import es from "./es.json";
+import { BRAND_NAME } from "../brand.js";
 
 const catalog: Record<Lang, Record<string, string>> = { it, en, fr, de, es };
 
@@ -24,6 +25,9 @@ export function setLang(lang: Lang) {
 }
 
 export function t(lang: Lang, key: string, fallback?: string): string {
+  // Brand name is centralised in `frontend/src/brand.ts` (env VITE_BRAND_NAME),
+  // not in the per-language JSON files.
+  if (key === "app.name") return BRAND_NAME;
   return catalog[lang]?.[key] ?? catalog["en"]?.[key] ?? fallback ?? key;
 }
 

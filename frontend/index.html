@@ -3,14 +3,15 @@
  <head>
  <meta charset="UTF-8" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>Empanadel — Tennis & Padel Booking</title>
- <link rel="stylesheet" href="/src/styles.css" />
+  <title>Bagel Club — Tennis & Padel Booking</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="stylesheet" href="/src/styles.css" />
  </head>
  <body class="site-page min-h-screen antialiased">
  <div x-data="app()" x-init="init()" class="flex min-h-screen flex-col">
  <header class="site-header sticky top-0 z-30 backdrop-blur">
  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
- <a href="#" class="text-lg font-bold tracking-tight" x-text="t('app.name')">Empanadel</a>
+  <a href="#" class="flex items-center gap-2"><img src="/logo.svg" :alt="t('app.name')" alt="Bagel Club" class="h-8 w-8 rounded-lg shadow-sm" /><span class="text-lg font-bold tracking-tight" x-text="t('app.name')">Bagel Club</span></a>
  <nav class="hidden gap-6 text-sm md:flex">
  <a href="#courts" class="hover:text-black" x-text="t('nav.courts')"></a>
  <a href="#me" x-show="user" class="hover:text-black" x-text="t('nav.myBookings')"></a>

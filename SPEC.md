@@ -1,4 +1,4 @@
-# Empanadel — Tennis & Padel Court Booking Web App — Specification
+# Bagel Club — Tennis & Padel Court Booking Web App — Specification
 
 > Version: 0.1.7 (Draft) — 2026-09-23
 > Status: Implementation — profile (mobile/gender/birthdate) + booking edit (notes/players/rent)
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-**Empanadel** is a web app for booking tennis and padel courts at a club.
+**Bagel Club** is a web app for booking tennis and padel courts at a club.
 
 Goals:
 - Allow club members (associates), visitors, and admins to manage and book courts from any device, prioritizing mobile.

@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "../config/brand.js";
+
 type Db = any;
 
 function maskToken(v: string | null | undefined): string | null {
@@ -191,7 +193,7 @@ export async function notifyAdminPendingBooking(db: Db, booking: any) {
     // respect channel toggles
     const viaTelegram = (settings as any).notifyViaTelegram ?? true;
     const viaWhatsapp = (settings as any).notifyViaWhatsapp ?? true;
-    const clubName = settings.clubName || "Empanadel";
+    const clubName = settings.clubName || BRAND_NAME;
     const { users, courts } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
     let user: any = null;
@@ -268,7 +270,7 @@ export async function notifyUserBookingDecision(db: Db, booking: any, decision: 
     if (decision === "rejected" && (settings as any).notifyOnRejection === false) return;
     const viaTelegram = (settings as any).notifyViaTelegram ?? true;
     const viaWhatsapp = (settings as any).notifyViaWhatsapp ?? true;
-    const clubName = settings.clubName || "Empanadel";
+    const clubName = settings.clubName || BRAND_NAME;
     const { users, courts } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
     let user: any = null;

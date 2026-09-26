@@ -51,10 +51,10 @@ await db
   .insert(users)
   .values({
     username: "admin",
-    email: "admin@empanadel.local",
+    email: "admin@bagelclub.local",
     passwordHash: adminHash,
     firstName: "Admin",
-    lastName: "Empanadel",
+    lastName: "Bagel Club",
     role: "admin",
     isVerified: true,
   })

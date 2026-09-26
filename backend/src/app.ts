@@ -22,6 +22,7 @@ import reportsRoutes from "./routes/reports.js";
 import notificationRoutes from "./routes/notifications.js";
 import telegramRoutes from "./routes/telegram.js";
 import { createDb } from "./db/connection.js";
+import { BRAND_NAME } from "./config/brand.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -123,7 +124,7 @@ if (process.env.NODE_ENV !== "test" && isMain) {
   const host = process.env.HOST || "0.0.0.0";
   try {
     await app.listen({ port, host });
-    console.log(`Empanadel API listening on http://${host}:${port}`);
+    console.log(`${BRAND_NAME} API listening on http://${host}:${port}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

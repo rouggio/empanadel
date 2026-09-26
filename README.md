@@ -1,4 +1,4 @@
-# Empanadel — Tennis & Padel Court Booking
+# Bagel Club — Tennis & Padel Court Booking
 
 > Spec: [`SPEC.md`](./SPEC.md) (v0.1.3) · Stack: Fastify + TypeScript + Drizzle + PostgreSQL · Frontend: Vite + Alpine.js + Tailwind · Deploy: Render.com single Web Service (API serves `frontend/dist`)
 

@@ -3,18 +3,19 @@ import { users, telegramLinkTokens } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { sendTelegramMessage } from "../services/notifications.js";
+import { BRAND_NAME, TELEGRAM_BOT_USERNAME_FALLBACK } from "../config/brand.js";
 
 function getBotTokenFromSettings(s: any): string {
   return s?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
 }
 async function getBotUsername(botToken: string): Promise<string> {
-  if (!botToken) return "Empanadel_bot";
+  if (!botToken) return TELEGRAM_BOT_USERNAME_FALLBACK;
   try {
     const r = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
     const j: any = await r.json().catch(() => null);
     if (j?.ok && j.result?.username) return j.result.username;
   } catch {}
-  return "Empanadel_bot";
+  return TELEGRAM_BOT_USERNAME_FALLBACK;
 }
 
 export default async function telegramRoutes(fastify: FastifyInstance) {
@@ -88,7 +89,7 @@ export default async function telegramRoutes(fastify: FastifyInstance) {
           }
         } catch {}
         if (botToken) {
-          await sendTelegramMessage(botToken, chatId, "Hi! To link your Empanadel account, open your Profile in the app and tap \"Connect Telegram\" — it will bring you here with a code.");
+          await sendTelegramMessage(botToken, chatId, `Hi! To link your ${BRAND_NAME} account, open your Profile in the app and tap "Connect Telegram" — it will bring you here with a code.`);
         }
       }
       return reply.send({ ok: true });
@@ -130,7 +131,7 @@ export default async function telegramRoutes(fastify: FastifyInstance) {
       const r2 = await db.select().from(appSettings).where(eq(appSettings.id, 1));
       if (r2[0]?.telegramBotToken) botToken = r2[0].telegramBotToken;
     } catch {}
-    if (botToken) await sendTelegramMessage(botToken, chatId, "✅ Telegram linked to your Empanadel account! You'll receive booking approvals/rejections here.");
+    if (botToken) await sendTelegramMessage(botToken, chatId, `✅ Telegram linked to your ${BRAND_NAME} account! You'll receive booking approvals/rejections here.`);
     return reply.send({ ok: true });
   });
 }

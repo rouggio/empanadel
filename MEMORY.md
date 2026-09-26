@@ -1,9 +1,9 @@
-# Empanadel — AI Session Memory
+# Bagel Club — AI Session Memory
 
 > Persisted habits and facts so next AI session doesn't lose track. Keep this file updated after each significant change.
 
 ## 1. Project & Stack
-- **App**: Empanadel — tennis & padel court booking, mobile-first. Personas `visitor|associate|admin`. Deferred visitor flow `browse → select slot → register → confirm → pending_approval|approved`.
+- **App**: Bagel Club (brand centralised: `frontend/src/brand.ts` `VITE_BRAND_NAME`, `backend/src/config/brand.ts` `BRAND_NAME`; `t('app.name')` returns it; formerly Empanadel) — tennis & padel court booking, mobile-first. Personas `visitor|associate|admin`. Deferred visitor flow `browse → select slot → register → confirm → pending_approval|approved`.
 - **Frontend**: `HTML + Alpine.js (Aurora) + Vite + Tailwind 4`, `frontend/src/main.ts:12` `app()` Alpine store, `frontend/index.html:1` SPA, `frontend/vite.config.ts:1` proxy `/api → :3000`, `frontend/src/styles.css:1` `@import "tailwindcss"` + `:root` theme.
 - **Backend**: `Node 20+ TS 5.x strict NodeNext ESM Fastify 4 Drizzle pg Zod bcryptjs @fastify/jwt/cookie/static/rate-limit/cors`, `backend/src/app.ts:1`, `backend/tsconfig.json:1` `ES2022 NodeNext strict`, `backend/drizzle.config.ts:1`.
 - **DB**: PostgreSQL 16 `btree_gist` EXCLUDE, Neon pooled `postgresql://neondb_owner:npg_WqXumnT7sfr0@ep-orange-sea-b1tza1cy-pooler.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require`, local `docker-compose.yml:1` `postgres:16-alpine:5432` `postgres:postgres@localhost:5432/empanadel`. **Do NOT use `libsql://empanadel-empanadel.aws-eu-west-1.turso.io`** (wrong).
@@ -14,7 +14,7 @@
 ## 2. Git & Deploy — CRITICAL HABIT
 - **Remote**: `origin git@github.com:rouggio/empanadel.git` `push.autoSetupRemote=true` branch `main`.
 - **Commits**: inspect `git status`, `git diff`, `git log --oneline -10` before committing; stage only intended files; never commit secrets; concise commit message matching repo style.
-- **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, or `deploy` you may `git push` + `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`. All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
+- **NEVER push to production (origin/main) nor trigger Render deploy unless explicitly requested by user** — keep all work on feature branches (`feat/*`) and local commits; only after user says `push`, `merge to main and push to render`, `deploy`, or shorthand `pd` (= push+deploy) you may `git push` + `POST https://api.render.com/deploy/srv-daqe6t17lnhs73cmjon0?key=bxH2ipSXfi0`. All recent fixes (`93cdfcf` etc.) were pushed before this rule; from now on hold back.
 - **All bugs & actions requested are for LOCAL dev (`docker-compose` postgres:5432, `localhost:3000/5173`) unless user explicitly says `production`/`live`/`Neon`/`Render`** — do not touch production DB or `origin/main` for fixes like `20:00 booking 409` `Centrale` local `diag.mjs` etc.
 - **When deploy IS requested**: Render `autoDeploy` is **OFF**. After `git push` you **MUST** call the deploy hook:
   ```

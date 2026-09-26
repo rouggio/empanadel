@@ -100,6 +100,7 @@ function app() {
     async setLang(lang: Lang) {
       this.lang = lang;
       setLang(lang);
+      document.title = `${this.t("app.name")} — Tennis & Padel Booking`;
       if (this.user) {
         const token = localStorage.getItem("token");
         try {
@@ -115,6 +116,7 @@ function app() {
     async init() {
       this.lang = detectLang();
       setLang(this.lang);
+      document.title = `${this.t("app.name")} — Tennis & Padel Booking`;
       try { this.pendingIntent = JSON.parse(localStorage.getItem("pending_booking_intent") || "null"); } catch { this.pendingIntent = null; }
       await this.loadClubInfo();
       await this.loadCourts();

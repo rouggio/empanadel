@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { appSettings } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { sendTelegramMessage, sendWhatsAppMessage } from "../services/notifications.js";
+import { BRAND_NAME } from "../config/brand.js";
 
 export default async function notificationRoutes(fastify: FastifyInstance) {
   fastify.post("/api/notifications/test", { preHandler: [fastify.authenticate, fastify.requireRole(["admin"])] }, async (req, reply) => {
@@ -14,8 +15,8 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
     const whatsappToken = s?.whatsappToken || process.env.WHATSAPP_TOKEN || "";
     const whatsappPhoneNumberId = s?.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
     const whatsappAdminPhone = to || s?.whatsappAdminPhone || process.env.WHATSAPP_ADMIN_PHONE || "";
-    const clubName = s?.clubName || "Empanadel";
-    const text = `🔔 ${clubName} — Test notification from Empanadel (${new Date().toISOString()})`;
+    const clubName = s?.clubName || BRAND_NAME;
+    const text = `🔔 ${clubName} — Test notification from ${BRAND_NAME} (${new Date().toISOString()})`;
 
     let result: any = {};
     if (!channel || channel === "telegram") {
